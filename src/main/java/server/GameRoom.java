@@ -2,6 +2,8 @@ package server;
 
 import protocol.MessagePacket;
 
+import java.util.Random;
+
 public class GameRoom {
     private ClientHandler player1;
     private ClientHandler player2;
@@ -28,7 +30,78 @@ public class GameRoom {
         p2.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Game started! Wait for your opponent's shot."));
     }
 
+    private void generateRandomBoard(int[][] board) {
+        int[] fleet = {4, 3, 3, 2, 2, 2, 1, 1, 1, 1};
+        Random random = new Random();
 
+        for (int size : fleet) {
+            boolean placed = false;
+            while (!placed) {
+                int x = random.nextInt(10);
+                int y = random.nextInt(10);
+                boolean horizontal = random.nextBoolean();
+
+                if (canPlaceShip(board, x, y, size, horizontal)) {
+                    placeShip(board, x, y, size, horizontal);
+                    placed = true;
+                }
+            }
+        }
+    }
+
+    private boolean canPlaceShip(int[][] board, int x, int y, int size, boolean horizontal) {
+        for (int i = 0; i < size; i++) {
+            int currentX = horizontal ? x : x + i;
+            int currentY = horizontal ? y + i : y;
+
+            if (currentX < 0 || currentX >= 10 || currentY < 0 || currentY >= 10) return false;
+
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dy = -1; dy <= 1; dy++) {
+                    int neighborX = currentX + dx;
+                    int neighborY = currentY + dy;
+                    if (neighborX >= 0 && neighborX < 10 && neighborY >= 0 && neighborY < 10) {
+                        if (board[neighborX][neighborY] != 0) return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+
+    private void placeShip(int[][] board, int x, int y, int size, boolean horizontal) {
+        for (int i = 0; i < size; i++) {
+            if (horizontal) {
+                board[x][y + i] = 1;
+            } else {
+                board[x + i][y] = 1;
+            }
+        }
+    }
+
+
+    private boolean isShipSunk(int[][] board, int x, int y) {
+        boolean[][] visited = new boolean[10][10];
+        return checkIfShipIsSunk(board, x, y, visited);
+    }
+
+    private boolean checkIfShipIsSunk(int[][] board, int x, int y, boolean[][] visited) {
+        if (x < 0 || x >= 10 || y < 0 || y >= 10 || visited[x][y]) return true;
+
+        if (board[x][y] == 1) return false;
+
+        if (board[x][y] != 3) return true;
+
+        visited[x][y] = true;
+
+        boolean up = checkIfShipIsSunk(board, x - 1, y, visited);
+        boolean down = checkIfShipIsSunk(board, x + 1, y, visited);
+        boolean left = checkIfShipIsSunk(board, x, y - 1, visited);
+        boolean right = checkIfShipIsSunk(board, x, y + 1, visited);
+
+        return up && down && left && right;
+    }
     public synchronized void handleShot(ClientHandler attacker, int x, int y) {
 
         if (attacker != currentTurn) {
@@ -42,20 +115,23 @@ public class GameRoom {
 
         if (targetBoard[x][y] == 1) {
             targetBoard[x][y] = 3;
-            attacker.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "HIT  (" + x + "," + y + ")! Shoot again."));
-            defender.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Your opponent HITS (" + x + "," + y + ")!"));
+            if (isShipSunk(targetBoard, x, y)) {
 
+                attacker.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "The ship is destroyed. It's your turn again."));
+                defender.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Oh no! Your ship is destroyed (" + x + "," + y + ")!"));
 
-            if (checkWin(targetBoard)) {
-                attacker.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "You won!!!"));
-                defender.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "You lost"));
+                if (checkWin(targetBoard)) {
+                    attacker.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Congrats! You win!"));
+                    defender.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "All your ships are destroyed. You lose."));
+                }
+            } else {
+                attacker.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "You got in (" + x + "," + y + ")! Your turn again."));
+                defender.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Your ship was shot at (" + x + "," + y + ")!"));
             }
         } else {
             targetBoard[x][y] = 2;
-            attacker.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Miss (" + x + "," + y + "). Your opponent's turn."));
-            defender.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Your opponent missed. Your turn!"));
-
-
+            attacker.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Bad shot (" + x + "," + y + "). Your opponent's turn."));
+            defender.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Your opponent made a bad shot. Your turn!"));
             currentTurn = defender;
         }
     }
