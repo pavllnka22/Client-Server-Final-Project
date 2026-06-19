@@ -1,0 +1,372 @@
+.root {
+    -fx-font-family: "-apple-system", "BlinkMacSystemFont", "Inter", "Segoe UI", sans-serif;
+    -fx-font-size: 13.5;
+    -fx-background-color: #eef0f3;
+}
+
+.label {
+    -fx-text-fill: #1a1d24;
+    -fx-font-smoothing-type: gray;
+}
+
+.button {
+    -fx-padding: 10 24;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-font-size: 13;
+    -fx-font-weight: 500;
+    -fx-cursor: hand;
+    -fx-text-fill: #1a1d24;
+    -fx-background-color: transparent;
+    -fx-border-color: #d0d5de;
+    -fx-border-width: 1.5;
+    -fx-transition: all 0.2s ease;
+}
+
+.button:hover {
+    -fx-background-color: #f5f6f9;
+    -fx-border-color: #b8c0cc;
+}
+
+.button:pressed {
+    -fx-background-color: #e8eaef;
+    -fx-scale-x: 0.97;
+    -fx-scale-y: 0.97;
+}
+
+.button:disabled {
+    -fx-opacity: 0.4;
+    -fx-cursor: default;
+}
+
+.button-primary {
+    -fx-background-color: #c9a84c;
+    -fx-border-color: #b8973a;
+    -fx-text-fill: white;
+    -fx-font-weight: 600;
+    -fx-effect: dropshadow(gaussian, rgba(201, 168, 76, 0.25), 8, 0, 0, 2);
+}
+
+.button-primary:hover {
+    -fx-background-color: #d4b85a;
+    -fx-border-color: #c9a84c;
+    -fx-effect: dropshadow(gaussian, rgba(201, 168, 76, 0.35), 12, 0, 0, 4);
+}
+
+.button-send {
+    -fx-background-color: #1a2332;
+    -fx-border-color: #1a2332;
+    -fx-text-fill: white;
+    -fx-padding: 8 18;
+    -fx-font-size: 16;
+    -fx-font-weight: 400;
+}
+
+.button-send:hover {
+    -fx-background-color: #2a3a52;
+    -fx-border-color: #2a3a52;
+}
+
+.text-field {
+    -fx-padding: 10 16;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: #d0d5de;
+    -fx-border-width: 1.5;
+    -fx-background-color: white;
+    -fx-text-fill: #1a1d24;
+    -fx-prompt-text-fill: #9aa3b2;
+    -fx-font-size: 13;
+}
+
+.text-field:focused {
+    -fx-border-color: #c9a84c;
+    -fx-border-width: 1.5;
+}
+
+.text-area {
+    -fx-padding: 14 18;
+    -fx-background-radius: 0;
+    -fx-font-size: 13.5;
+    -fx-font-family: "-apple-system", "Inter", "Segoe UI", sans-serif;
+    -fx-background-color: #0f1724;
+    -fx-text-fill: #d0d8e8;
+    -fx-control-inner-background: #0f1724;
+    -fx-border-width: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+
+.text-area .content {
+    -fx-padding: 4 6;
+    -fx-line-spacing: 6;
+}
+
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar:vertical .thumb {
+    -fx-background-color: #2a3a52;
+    -fx-background-radius: 4;
+}
+
+.scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #3a4a62;
+}
+
+.scroll-bar:vertical .track {
+    -fx-background-color: transparent;
+}
+
+.label-title {
+    -fx-font-size: 22;
+    -fx-font-weight: 600;
+    -fx-text-fill: white;
+    -fx-letter-spacing: 0.5;
+}
+
+.label-header {
+    -fx-font-size: 14;
+    -fx-font-weight: 500;
+    -fx-text-fill: #4a5268;
+    -fx-letter-spacing: 0.3;
+}
+
+.label-chat-header {
+    -fx-font-size: 13.5;
+    -fx-font-weight: 500;
+    -fx-text-fill: #a0b0c8;
+}
+
+.top-panel {
+    -fx-background-color: #0f1724;
+    -fx-border-color: #1a2a3a;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 16 32;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 8, 0, 0, 2);
+}
+
+.top-panel .label {
+    -fx-text-fill: white;
+}
+
+.top-panel .separator-line {
+    -fx-background-color: #c9a84c;
+    -fx-pref-height: 2;
+    -fx-max-height: 2;
+}
+
+.panel {
+    -fx-background-color: white;
+    -fx-border-color: #e2e6ec;
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 18;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.04), 16, 0, 0, 2);
+}
+
+.chat-panel {
+    -fx-background-color: #0f1724;
+    -fx-border-color: #1a2a3a;
+    -fx-border-width: 1;
+    -fx-border-radius: 14;
+    -fx-background-radius: 14;
+    -fx-padding: 0;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.15), 20, 0, 0, 4);
+}
+
+.chat-panel-header {
+    -fx-background-color: #0f1724;
+    -fx-padding: 14 20;
+    -fx-border-radius: 14 14 0 0;
+    -fx-background-radius: 14 14 0 0;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-color: #1a2a3a;
+}
+
+.chat-panel-header .label {
+    -fx-text-fill: #a0b0c8;
+}
+
+.chat-panel-header .accent-line {
+    -fx-background-color: #c9a84c;
+    -fx-pref-width: 3;
+    -fx-max-width: 3;
+    -fx-pref-height: 20;
+    -fx-max-height: 20;
+    -fx-background-radius: 2;
+}
+
+.chat-input-area {
+    -fx-padding: 12 18 18 18;
+    -fx-background-color: #0f1724;
+    -fx-border-color: #1a2a3a;
+    -fx-border-width: 1 0 0 0;
+    -fx-border-radius: 0 0 14 14;
+    -fx-background-radius: 0 0 14 14;
+}
+
+.chat-input-area .text-field {
+    -fx-background-color: #1a2332;
+    -fx-border-color: #2a3a52;
+    -fx-text-fill: #d0d8e8;
+    -fx-prompt-text-fill: #5a6a82;
+}
+
+.chat-input-area .text-field:focused {
+    -fx-border-color: #c9a84c;
+}
+
+.game-board-container {
+    -fx-hgap: 0;
+    -fx-vgap: 0;
+    -fx-padding: 12 8 8 12;
+    -fx-background-color: #fafbfc;
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
+    -fx-border-color: #5a7a8a;
+    -fx-border-width: 2;
+}
+
+.board-cell {
+    -fx-pref-width: 32;
+    -fx-pref-height: 32;
+    -fx-min-width: 32;
+    -fx-min-height: 32;
+    -fx-max-width: 32;
+    -fx-max-height: 32;
+    -fx-font-size: 11;
+    -fx-font-weight: 500;
+    -fx-padding: 0;
+    -fx-background-color: white;
+    -fx-text-fill: #5a7a8a;
+    -fx-cursor: hand;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-color: #a8c5d6;
+    -fx-border-width: 1;
+    -fx-transition: all 0.1s ease;
+    -fx-font-size: 10;
+    -fx-font-weight: 600;
+}
+
+.board-cell:hover {
+    -fx-background-color: #e8f1f6;
+    -fx-border-color: #7a9eae;
+}
+
+.board-cell:disabled {
+    -fx-cursor: default;
+}
+
+.ship-cell {
+    -fx-background-color: #4a7ba7;
+    -fx-border-color: #a8c5d6;
+    -fx-text-fill: white;
+}
+
+.ship-cell:hover {
+    -fx-background-color: #5a8bc7;
+    -fx-border-color: #7a9eae;
+}
+
+.hit-cell {
+    -fx-background-color: #d97c6f;
+    -fx-border-color: #a8c5d6;
+    -fx-text-fill: white;
+    -fx-font-size: 14;
+    -fx-font-weight: bold;
+}
+
+.miss-cell {
+    -fx-background-color: #f5f7f9;
+    -fx-border-color: #a8c5d6;
+    -fx-text-fill: #7a9eae;
+    -fx-font-size: 10;
+}
+
+.sunk-cell {
+    -fx-background-color: #2d4a65;
+    -fx-border-color: #a8c5d6;
+    -fx-text-fill: white;
+    -fx-font-size: 14;
+    -fx-font-weight: bold;
+}
+
+.empty-cell {
+    -fx-background-color: white;
+    -fx-border-color: #a8c5d6;
+}
+
+.accent-gold {
+    -fx-fill: #c9a84c;
+}
+
+.accent-gold-border {
+    -fx-border-color: #c9a84c;
+    -fx-border-width: 1.5;
+}
+
+.divider-gold {
+    -fx-background-color: #c9a84c;
+    -fx-pref-height: 1.5;
+    -fx-max-height: 1.5;
+    -fx-opacity: 0.4;
+}
+
+.stat-value {
+    -fx-font-size: 14;
+    -fx-font-weight: 500;
+    -fx-text-fill: #1a1d24;
+}
+
+.stat-label {
+    -fx-font-size: 14;
+    -fx-font-weight: 500;
+    -fx-text-fill: #4a5268;
+}
+
+.stat-box {
+    -fx-background-color: #f7f8fa;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8 12;
+    -fx-border-color: #e8eaef;
+    -fx-border-width: 1;
+}
+
+.separator {
+    -fx-background-color: #e2e6ec;
+}
+
+.hbox, .vbox {
+    -fx-spacing: 10;
+}
+
+.badge {
+    -fx-background-color: #f0f2f5;
+    -fx-background-radius: 12;
+    -fx-padding: 4 12;
+    -fx-font-size: 11;
+    -fx-font-weight: 500;
+    -fx-text-fill: #4a5268;
+}
+
+.badge-gold {
+    -fx-background-color: #c9a84c;
+    -fx-text-fill: white;
+}
+
+.coord-label {
+    -fx-font-size: 10;
+    -fx-font-weight: 600;
+    -fx-text-fill: #5a7a8a;
+    -fx-alignment: CENTER;
+}
