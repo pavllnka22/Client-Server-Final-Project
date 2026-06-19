@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Rectangle?>
+
+<BorderPane prefHeight="740" prefWidth="1320"
+            xmlns="http://javafx.com/javafx/23"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="client.controllers.game.GameController"
+            styleClass="root">
+
+    <top>
+        <VBox styleClass="top-panel">
+            <children>
+                <HBox alignment="CENTER_LEFT" spacing="14">
+                    <children>
+                        <Label text="⚓" style="-fx-font-size: 22; -fx-text-fill: #c9a84c; -fx-opacity: 0.8;" />
+
+                        <VBox spacing="0">
+                            <children>
+                                <HBox spacing="8" alignment="CENTER_LEFT">
+                                    <children>
+                                        <Label text="BattleShip" styleClass="label-title" />
+                                    </children>
+                                </HBox>
+                                <Rectangle width="80" height="2" fill="#c9a84c" style="-fx-opacity: 0.4; -fx-arc-width: 1; -fx-arc-height: 1;" />
+                            </children>
+                        </VBox>
+
+                        <HBox HBox.hgrow="ALWAYS" />
+
+                        <Button fx:id="autoPlaceButton" onAction="#handleAutoPlace" text="✦ Place Ships" styleClass="button, button-primary" />
+                    </children>
+                </HBox>
+            </children>
+        </VBox>
+    </top>
+
+    <center>
+        <HBox spacing="20" alignment="TOP_CENTER" style="-fx-padding: 20 24 24 24; -fx-background-color: #eef0f3;">
+
+            <children>
+
+                <VBox spacing="12" prefWidth="380" styleClass="panel">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <children>
+                                <Rectangle width="3" height="18" fill="#c9a84c" style="-fx-arc-width: 1.5; -fx-arc-height: 1.5;" />
+                                <Label text="My Fleet" styleClass="label-header" />
+                                <HBox alignment="CENTER_RIGHT" spacing="6" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label fx:id="playerShipCount" styleClass="stat-value" />
+                                        <Label text="ships" styleClass="stat-label" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </HBox>
+
+                        <VBox spacing="4" alignment="TOP_CENTER">
+                            <HBox spacing="0" alignment="CENTER_LEFT">
+                                <children>
+                                    <Label text="" style="-fx-min-width: 24; -fx-min-height: 24;" />
+                                    <HBox spacing="0">
+                                        <children>
+                                            <Label text="A" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="B" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="C" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="D" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="E" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="F" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="G" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="H" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="I" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="J" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="K" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                        </children>
+                                    </HBox>
+                                </children>
+                            </HBox>
+
+                            <HBox spacing="0" alignment="TOP_CENTER">
+                                <children>
+                                    <VBox spacing="0">
+                                        <children>
+                                            <Label text="1" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="2" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="3" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="4" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="5" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="6" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="7" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="8" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="9" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="10" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32; -fx-font-size: 9;" />
+                                        </children>
+                                    </VBox>
+
+                                    <GridPane fx:id="playerBoardGrid" prefHeight="352" prefWidth="352" styleClass="game-board-container" />
+                                </children>
+                            </HBox>
+                        </VBox>
+                    </children>
+                </VBox>
+
+                <VBox spacing="12" prefWidth="380" styleClass="panel">
+                    <children>
+                        <HBox alignment="CENTER_LEFT" spacing="12">
+                            <children>
+                                <Rectangle width="3" height="18" fill="#c9a84c" style="-fx-arc-width: 1.5; -fx-arc-height: 1.5;" />
+                                <Label text="Opponent Fleet" styleClass="label-header" />
+                                <HBox alignment="CENTER_RIGHT" spacing="6" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label fx:id="opponentShipCount" styleClass="stat-value" />
+                                        <Label text="ships" styleClass="stat-label" />
+                                    </children>
+                                </HBox>
+                            </children>
+                        </HBox>
+
+                        <VBox spacing="4" alignment="TOP_CENTER">
+                            <HBox spacing="0" alignment="CENTER_LEFT">
+                                <children>
+                                    <Label text="" style="-fx-min-width: 24; -fx-min-height: 24;" />
+                                    <HBox spacing="0">
+                                        <children>
+                                            <Label text="A" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="B" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="C" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="D" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="E" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="F" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="G" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="H" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="I" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="J" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                            <Label text="K" styleClass="coord-label" style="-fx-min-width: 32; -fx-min-height: 24;" />
+                                        </children>
+                                    </HBox>
+                                </children>
+                            </HBox>
+
+                            <HBox spacing="0" alignment="TOP_CENTER">
+                                <children>
+                                    <VBox spacing="0">
+                                        <children>
+                                            <Label text="1" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="2" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="3" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="4" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="5" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="6" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="7" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="8" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="9" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32;" />
+                                            <Label text="10" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32; -fx-font-size: 9;" />
+                                        </children>
+                                    </VBox>
+
+                                    <GridPane fx:id="opponentBoardGrid" prefHeight="352" prefWidth="352" styleClass="game-board-container" />
+                                </children>
+                            </HBox>
+                        </VBox>
+                    </children>
+                </VBox>
+
+                <VBox spacing="0" prefWidth="280" styleClass="chat-panel">
+
+                    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="chat-panel-header">
+                        <children>
+                            <Label text="💬" style="-fx-font-size: 16; -fx-text-fill: #c9a84c;" />
+                            <Label text="Chat" style="-fx-text-fill: #c9a84c; -fx-font-size: 14; -fx-font-weight: 600; -fx-letter-spacing: 0.3;" />
+                        </children>
+                    </HBox>
+
+                    <ScrollPane style="-fx-background-color: transparent; -fx-border-width: 0; -fx-fit-to-width: true;" VBox.vgrow="ALWAYS">
+                        <content>
+                            <TextArea fx:id="chatArea" editable="false" wrapText="true" prefHeight="310" styleClass="text-area" />
+                        </content>
+                        <VBox.vgrow>ALWAYS</VBox.vgrow>
+                    </ScrollPane>
+
+                    <HBox spacing="10" styleClass="chat-input-area">
+                        <children>
+                            <TextField fx:id="chatField" onAction="#handleSendChat" promptText="Type a message..." styleClass="text-field" HBox.hgrow="ALWAYS" />
+                            <Button fx:id="sendButton" onAction="#handleSendChat" text="→" styleClass="button, button-send" style="-fx-padding: 8 18; -fx-font-size: 16; -fx-font-weight: 400;" />
+                        </children>
+                    </HBox>
+
+                </VBox>
+
+            </children>
+        </HBox>
+    </center>
+</BorderPane>
