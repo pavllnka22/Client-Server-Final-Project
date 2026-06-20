@@ -50,6 +50,17 @@ public class ClientHandler implements Runnable {
                         System.out.println("Error while login: " + login);
                         sendPacket(new MessagePacket(MessagePacket.Type.AUTH_FAIL, "SERVER", "Invalid username or password!"));
                     }
+                } else if (authPacket.getType() == MessagePacket.Type.REGISTER_REQUEST) {
+                    String login = authPacket.getSender();
+                    String password = authPacket.getPassword();
+
+                    boolean success = DatabaseManager.registerUser(login, password);
+
+                    if (success) {
+                        sendPacket(new MessagePacket(MessagePacket.Type.REGISTER_SUCCESS, "SERVER", "Registration successful!"));
+                    } else {
+                        sendPacket(new MessagePacket(MessagePacket.Type.REGISTER_FAIL, "SERVER", "Username already exists!"));
+                    }
                 }
             }
 

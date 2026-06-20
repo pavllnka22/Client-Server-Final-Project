@@ -1,23 +1,44 @@
 package server;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import java.sql.*;
 
 public class DatabaseManager {
 
-    private static final String URL = "jdbc:sqlite:battleship.db";
+    private static final Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
+    private static final String DB_URL = dotenv.get("DB_URL");
+
+    static {
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            System.err.println("PostgreSQL Driver not found: " + e.getMessage());
+        }
+    }
+
+    private static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(DB_URL);
+    }
 
     public static void initialize() {
-        String createTableSQL = "CREATE TABLE IF NOT EXISTS users (" +
-                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                "login TEXT UNIQUE NOT NULL," +
-                "password_hash TEXT NOT NULL," +
-                "role TEXT NOT NULL" +
-                ");";
+        if (DB_URL == null) {
+            System.err.println("ERROR: Missing DB_URL in .env file!");
+            return;
+        }
 
-        try (Connection conn = DriverManager.getConnection(URL);
+        String createTableSQL = """
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                login VARCHAR(50) UNIQUE NOT NULL,
+                password_hash VARCHAR(256) NOT NULL,
+                role VARCHAR(20) NOT NULL DEFAULT 'USER'
+            )
+        """;
+
+        try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
             stmt.execute(createTableSQL);
-            System.out.println("Базу даних успішно ініціалізовано.");
+            System.out.println("PostgreSQL database initialized successfully.");
             createAdminIfNotExist();
 
         } catch (SQLException e) {
@@ -29,7 +50,7 @@ public class DatabaseManager {
         String sql = "INSERT INTO users(login, password_hash, role) VALUES(?, ?, ?)";
         String hash = PasswordHasher.hashPassword(password);
 
-        try (Connection conn = DriverManager.getConnection(URL);
+        try (Connection conn = getConnection();
              PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
             preparedStatement.setString(1, login);
             preparedStatement.setString(2, hash);
@@ -37,7 +58,11 @@ public class DatabaseManager {
             preparedStatement.executeUpdate();
             return true;
         } catch (SQLException e) {
-            System.out.println("Registration error/login already in use: " + e.getMessage());
+            if (e.getMessage().contains("duplicate key")) {
+                System.out.println("Registration error: User '" + login + "' already exists");
+            } else {
+                System.out.println("Registration error: " + e.getMessage());
+            }
             return false;
         }
     }
@@ -46,7 +71,7 @@ public class DatabaseManager {
         String sql = "SELECT password_hash, role FROM users WHERE login = ?";
         String inputHash = PasswordHasher.hashPassword(password);
 
-        try (Connection conn = DriverManager.getConnection(URL);
+        try (Connection conn = getConnection();
              PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
             preparedStatement.setString(1, login);
             ResultSet rs = preparedStatement.executeQuery();
@@ -66,13 +91,32 @@ public class DatabaseManager {
     }
 
     private static void createAdminIfNotExist() {
-        String sql = "INSERT OR IGNORE INTO users(id, login, password_hash, role) VALUES(1, 'admin', ?, 'ADMIN')";
-        try (Connection conn = DriverManager.getConnection(URL);
+        String sql = """
+            INSERT INTO users(login, password_hash, role) 
+            VALUES('admin', ?, 'ADMIN')
+            ON CONFLICT (login) DO NOTHING
+        """;
+
+        try (Connection conn = getConnection();
              PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
             preparedStatement.setString(1, PasswordHasher.hashPassword("admin123"));
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    public static boolean testConnection() {
+        if (DB_URL == null) {
+            System.err.println("Missing DB_URL in .env file");
+            return false;
+        }
+
+        try (Connection conn = getConnection()) {
+            return conn != null && !conn.isClosed();
+        } catch (SQLException e) {
+            System.err.println("Connection test failed: " + e.getMessage());
+            return false;
         }
     }
 }

@@ -6,7 +6,8 @@ public class MessagePacket implements Serializable {
 
     public enum Type {
         CONNECT, CHAT, SHOT, SYSTEM,
-        AUTH_REQUEST, AUTH_SUCCESS, AUTH_FAIL
+        AUTH_REQUEST, AUTH_SUCCESS, AUTH_FAIL,
+        REGISTER_REQUEST, REGISTER_SUCCESS, REGISTER_FAIL
     }
 
     private Type type;
