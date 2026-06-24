@@ -1,24 +1,26 @@
 package server;
 
+import protocol.AdminActions;
 import protocol.MessagePacket;
+
 import java.io.*;
 import java.net.Socket;
+
+import static protocol.AdminActions.Command.KICK;
 
 public class ClientHandler implements Runnable {
     private Socket clientSocket;
     private ObjectInputStream in;
     private ObjectOutputStream out;
     private String username;
+    private String role;
     private GameRoom gameRoom;
-    private boolean isAuthenticated = false;
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
         try {
-
             this.out = new ObjectOutputStream(clientSocket.getOutputStream());
             this.in = new ObjectInputStream(clientSocket.getInputStream());
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -27,88 +29,103 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try {
+            boolean isAuthenticated = false;
+
             while (!isAuthenticated) {
-                MessagePacket authPacket = (MessagePacket) in.readObject();
-                if (authPacket == null) return;
+                Object obj = in.readObject();
+                if (obj == null) return;
 
-                if (authPacket.getType() == MessagePacket.Type.AUTH_REQUEST) {
-                    String login = authPacket.getSender();
-                    String password = authPacket.getPassword();
+                if (obj instanceof MessagePacket authPacket) {
+                    if (authPacket.getType() == MessagePacket.Type.AUTH_REQUEST) {
+                        String login = authPacket.getSender();
+                        String password = authPacket.getPassword();
 
-                    String role = DatabaseManager.authenticateUser(login, password);
+                        String role = DatabaseManager.authenticateUser(login, password);
 
-                    if (role != null) {
-                        if (role.equals("BANNED")) {
-                            sendPacket(new MessagePacket(MessagePacket.Type.AUTH_FAIL, "SERVER", "You are banned!"));
+                        if ("BANNED".equals(role)) {
+                            sendPacket(new MessagePacket(MessagePacket.Type.AUTH_FAIL, "SERVER",
+                                    "Your account has been banned by administrator!"));
                             continue;
                         }
-                        this.username = login;
-                        isAuthenticated = true;
 
-                        sendPacket(new MessagePacket(MessagePacket.Type.AUTH_SUCCESS, "SERVER", "Authorisation successful! Role: " + role));
+                        if (role != null) {
+                            this.username = login;
+                            this.role = role;
+                            isAuthenticated = true;
 
+                            sendPacket(new MessagePacket(MessagePacket.Type.AUTH_SUCCESS, "SERVER",
+                                    "Authorisation successful! Role: " + role));
 
-                        SimpleServer.matchPlayer(this);
-                    } else {
-                        System.out.println("Error while login: " + login);
-                        sendPacket(new MessagePacket(MessagePacket.Type.AUTH_FAIL, "SERVER", "Invalid username or password!"));
+                            if ("USER".equals(role)) {
+                                SimpleServer.matchPlayer(this);
+                            } else {
+                                System.out.println("[ADMIN] " + login + " is now monitoring.");
+                            }
+                        } else {
+                            sendPacket(new MessagePacket(MessagePacket.Type.AUTH_FAIL, "SERVER",
+                                    "Invalid username or password!"));
+                        }
+                    } else if (authPacket.getType() == MessagePacket.Type.REGISTER_REQUEST) {
+                        String login = authPacket.getSender();
+                        String password = authPacket.getPassword();
+                        boolean success = DatabaseManager.registerUser(login, password);
+                        sendPacket(new MessagePacket(
+                                success ? MessagePacket.Type.REGISTER_SUCCESS : MessagePacket.Type.REGISTER_FAIL,
+                                "SERVER",
+                                success ? "Registration successful!" : "Username already exists!"
+                        ));
                     }
-                } else if (authPacket.getType() == MessagePacket.Type.REGISTER_REQUEST) {
-                    String login = authPacket.getSender();
-                    String password = authPacket.getPassword();
-
-                    boolean success = DatabaseManager.registerUser(login, password);
-
-                    if (success) {
-                        sendPacket(new MessagePacket(MessagePacket.Type.REGISTER_SUCCESS, "SERVER", "Registration successful!"));
+                } else if (obj instanceof AdminActions adminActions) {
+                    if ("ADMIN".equals(this.role)) {
+                        handleAdminAction(adminActions);
                     } else {
-                        sendPacket(new MessagePacket(MessagePacket.Type.REGISTER_FAIL, "SERVER", "Username already exists!"));
+                        sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER",
+                                "Not allowed to perform this action!"));
                     }
                 }
             }
 
             while (true) {
-                MessagePacket packet = (MessagePacket) in.readObject();
-                if (packet == null) break;
+                Object obj = in.readObject();
+                if (obj == null) break;
 
-                System.out.println("Packet received from " + username + ": " + packet.getType());
-
-                if (packet.getType() == MessagePacket.Type.CHAT) {
-                    if (gameRoom != null && gameRoom.containsPlayer(this)) {
-                        ClientHandler opponent = getOpponent();
-                        if (opponent != null) {
-                            opponent.sendPacket(packet);
+                if (obj instanceof MessagePacket packet) {
+                    switch (packet.getType()) {
+                        case CHAT -> {
+                            if (gameRoom != null && gameRoom.containsPlayer(this)) {
+                                ClientHandler opponent = getOpponent();
+                                if (opponent != null) opponent.sendPacket(packet);
+                            } else {
+                                sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER",
+                                        "You are not in a game!"));
+                            }
                         }
-                    } else {
-                        sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "You are not in a game!"));
-                    }
-                } else if (packet.getType() == MessagePacket.Type.SHOT) {
-                    System.out.println("SHOT from " + username + " at (" + packet.getX() + "," + packet.getY() + ")");
-                    if (gameRoom != null) {
-                        gameRoom.handleShot(this, packet.getX(), packet.getY());
-                    } else {
-                        sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "You are not in a game yet!"));
-                    }
-                } else if (packet.getType() == MessagePacket.Type.SYSTEM) {
-                    String content = packet.getContent();
-                    System.out.println("SYSTEM packet from " + username + ": " + content);
-
-                    if (content != null && content.startsWith("SHIPS:")) {
-                        System.out.println("Processing SHIPS data from " + username);
-                        if (gameRoom != null) {
-                            gameRoom.setPlayerShips(this, content);
-                        } else {
-                            System.out.println("GameRoom is null for " + username);
-                            sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Error: No game room!"));
+                        case SHOT -> {
+                            if (gameRoom != null) {
+                                gameRoom.handleShot(this, packet.getX(), packet.getY());
+                            } else {
+                                sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER",
+                                        "You are not in a game yet!"));
+                            }
                         }
-                    }
-                } else if (packet.getType() == MessagePacket.Type.STATS_REQUEST) {
-                    System.out.println("Getting stats for: " + username);
-                    String stats = DatabaseManager.getPlayerStats(username);
-                    if (stats != null) {
-                        sendPacket(new MessagePacket(MessagePacket.Type.STATS_RESPONSE, "SERVER", stats));
-                    } else {
-                        sendPacket(new MessagePacket(MessagePacket.Type.STATS_RESPONSE, "SERVER", "No stats available"));
+                        case SYSTEM -> {
+                            String content = packet.getContent();
+                            if (content != null && content.startsWith("SHIPS:")) {
+                                if (gameRoom != null) {
+                                    gameRoom.setPlayerShips(this, content);
+                                } else {
+                                    sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER",
+                                            "Error: No game room!"));
+                                }
+                            }
+                        }
+                        case STATS_REQUEST -> {
+                            String stats = DatabaseManager.getPlayerStats(username);
+                            sendPacket(new MessagePacket(MessagePacket.Type.STATS_RESPONSE, "SERVER",
+                                    stats != null ? stats : "No stats available"));
+                        }
+                        default -> {
+                        }
                     }
                 }
             }
@@ -122,51 +139,65 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    private void handleAdminAction(AdminActions packet) {
+        String target = packet.getTargetUsername();
+        ClientHandler targetHandler = SimpleServer.getClientHandlerByUsername(target);
+
+        switch (packet.getCommand()) {
+            case KICK -> {
+                if (targetHandler != null) {
+                    targetHandler.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER",
+                            "You were kicked by admin!"));
+                    targetHandler.closeConnection();
+                    System.out.println("[ADMIN] User " + target + " was kicked.");
+                }
+            }
+            case BAN -> {
+                DatabaseManager.banUserInDB(target);
+                System.out.println("[ADMIN] User " + target + " was banned.");
+
+                if (targetHandler != null) {
+                    targetHandler.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER",
+                            "You were banned by admin!"));
+                    if (targetHandler.getGameRoom() != null) {
+                        targetHandler.getGameRoom().forceWinDueToDisconnection(targetHandler);
+                    }
+                    targetHandler.closeConnection();
+                }
+            }
+            case GET_MONITORING -> {
+                String stats = SimpleServer.getNetworkMonitoringStatistics();
+                sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", stats));
+            }
+        }
+    }
+
     private ClientHandler getOpponent() {
         if (gameRoom == null) return null;
         try {
-            java.lang.reflect.Field field1 = GameRoom.class.getDeclaredField("player1");
-            java.lang.reflect.Field field2 = GameRoom.class.getDeclaredField("player2");
+            var field1 = GameRoom.class.getDeclaredField("player1");
+            var field2 = GameRoom.class.getDeclaredField("player2");
             field1.setAccessible(true);
             field2.setAccessible(true);
             ClientHandler p1 = (ClientHandler) field1.get(gameRoom);
             ClientHandler p2 = (ClientHandler) field2.get(gameRoom);
-            if (p1 == this) return p2;
-            if (p2 == this) return p1;
+            return (p1 == this) ? p2 : (p2 == this) ? p1 : null;
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
         }
-        return null;
     }
 
-    private void closeConnection() {
+    public void closeConnection() {
         try {
+            SimpleServer.removeClient(this);
             if (gameRoom != null) {
-                ClientHandler opponent = getOpponent();
-                if (opponent != null && !gameOver()) {
-                    String winner = opponent.getUsername();
-                    String loser = this.username;
-                    DatabaseManager.updatePlayerStats(winner, loser);
-                    opponent.sendPacket(new MessagePacket(MessagePacket.Type.GAME_OVER, "SERVER", winner));
-                    opponent.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "GAME_OVER:" + winner));
-                    opponent.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Opponent disconnected! You win!"));
-                }
+                gameRoom.forceWinDueToDisconnection(this);
             }
             if (in != null) in.close();
             if (out != null) out.close();
-            if (clientSocket != null) clientSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private boolean gameOver() {
-        try {
-            java.lang.reflect.Field field = GameRoom.class.getDeclaredField("gameOver");
-            field.setAccessible(true);
-            return (boolean) field.get(gameRoom);
-        } catch (Exception e) {
-            return false;
+            if (clientSocket != null && !clientSocket.isClosed()) clientSocket.close();
+        } catch (IOException _) {
         }
     }
 
@@ -175,7 +206,7 @@ public class ClientHandler implements Runnable {
             out.writeObject(packet);
             out.flush();
         } catch (IOException e) {
-            System.out.println("Failed to send packet: " + e.getMessage());
+            System.out.println("Failed to send packet to " + username + ": " + e.getMessage());
         }
     }
 
@@ -186,5 +217,9 @@ public class ClientHandler implements Runnable {
 
     public String getUsername() {
         return username;
+    }
+
+    public GameRoom getGameRoom() {
+        return gameRoom;
     }
 }

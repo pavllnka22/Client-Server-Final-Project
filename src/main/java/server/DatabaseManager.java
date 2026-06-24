@@ -269,6 +269,11 @@ public class DatabaseManager {
         }
     }
 
+    // Додано для сумісності з ClientHandler
+    public static boolean banUserInDB(String username) {
+        return banUser(username);
+    }
+
     private static void createAdminIfNotExist() {
         String sql = """
             INSERT INTO users(login, password_hash, role) 

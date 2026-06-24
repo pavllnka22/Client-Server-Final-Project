@@ -183,4 +183,21 @@ public class GameRoom {
     public boolean containsPlayer(ClientHandler handler) {
         return player1 == handler || player2 == handler;
     }
+
+    public synchronized void forceWinDueToDisconnection(ClientHandler disconnectedPlayer) {
+        ClientHandler winner = (disconnectedPlayer == player1) ? player2 : player1;
+
+        if (winner != null) {
+            winner.sendPacket(new MessagePacket(
+                    MessagePacket.Type.SYSTEM,
+                    "SERVER",
+                    "Opponent was banned or left the game. You win automatically!"
+            ));
+        }
+
+        System.out.println("[ADMIN] Game room closed due to the ban of  " + disconnectedPlayer.getUsername());
+
+        if (player1 != null) player1.setGameRoom(null);
+        if (player2 != null) player2.setGameRoom(null);
+    }
 }

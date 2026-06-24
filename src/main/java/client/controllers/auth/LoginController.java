@@ -3,6 +3,7 @@ package client.controllers.auth;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
@@ -87,9 +88,16 @@ public class LoginController {
                 MessagePacket response = (MessagePacket) in.readObject();
 
                 if (response.getType() == MessagePacket.Type.AUTH_SUCCESS) {
+                    String serverContent = response.getContent();
+
                     Platform.runLater(() -> {
                         showStatus("Login successful!", false);
-                        openGameForm(login);
+
+                        if (serverContent != null && serverContent.contains("Role: ADMIN")) {
+                            openAdminPanel();
+                        } else {
+                            openGameForm(login);
+                        }
                     });
                 } else {
                     Platform.runLater(() -> {
@@ -181,6 +189,39 @@ public class LoginController {
         }
     }
 
+    private void openAdminPanel() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/admin-panel.fxml"));
+
+            Parent root = loader.load();
+            Scene scene = new Scene(root, 650, 450);
+
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+
+            client.controllers.auth.AdminController adminController = loader.getController();
+            adminController.initData(loginExecutor, socket, out, in);
+
+            Stage stage = new Stage();
+            stage.setTitle("BattleShip - admin panel");
+            stage.setScene(scene);
+
+            stage.setOnCloseRequest((WindowEvent event) -> {
+                closeResources();
+                Platform.exit();
+                System.exit(0);
+            });
+
+            stage.show();
+
+            Stage loginStage = (Stage) loginButton.getScene().getWindow();
+            loginStage.close();
+
+        } catch (IOException e) {
+            showStatus("Error loading admin panel: " + e.getMessage(), true);
+            e.printStackTrace();
+            closeResources();
+        }
+    }
     private void closeResources() {
         try {
             if (in != null) { in.close(); in = null; }
