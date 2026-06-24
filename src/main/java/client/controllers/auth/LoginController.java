@@ -81,7 +81,6 @@ public class LoginController {
         loginExecutor.submit(() -> {
             try {
                 socket = new Socket("localhost", 8080);
-                socket.setSoTimeout(10000);
                 out = new ObjectOutputStream(socket.getOutputStream());
                 in = new ObjectInputStream(socket.getInputStream());
 
