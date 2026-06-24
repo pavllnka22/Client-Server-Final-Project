@@ -9,6 +9,7 @@ import javafx.scene.control.*;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import protocol.MessagePacket;
+import protocol.CryptoUtils;
 import client.controllers.game.GameController;
 
 import java.io.IOException;
@@ -82,10 +83,9 @@ public class LoginController {
                 in = new ObjectInputStream(socket.getInputStream());
 
                 MessagePacket authRequest = new MessagePacket(MessagePacket.Type.AUTH_REQUEST, login, "", password);
-                out.writeObject(authRequest);
-                out.flush();
+                CryptoUtils.sendEncrypted(out, authRequest);
 
-                MessagePacket response = (MessagePacket) in.readObject();
+                MessagePacket response = (MessagePacket) CryptoUtils.receiveEncrypted(in);
 
                 if (response.getType() == MessagePacket.Type.AUTH_SUCCESS) {
                     String serverContent = response.getContent();
@@ -107,15 +107,9 @@ public class LoginController {
                     closeResources();
                 }
 
-            } catch (IOException e) {
+            } catch (Exception e) {
                 Platform.runLater(() -> {
                     showStatus("Connection error: " + e.getMessage(), true);
-                    loginButton.setDisable(false);
-                });
-                closeResources();
-            } catch (ClassNotFoundException e) {
-                Platform.runLater(() -> {
-                    showStatus("Protocol error", true);
                     loginButton.setDisable(false);
                 });
                 closeResources();
@@ -222,6 +216,7 @@ public class LoginController {
             closeResources();
         }
     }
+
     private void closeResources() {
         try {
             if (in != null) { in.close(); in = null; }

@@ -6,6 +6,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Button;
 import javafx.stage.Stage;
 import protocol.MessagePacket;
+import protocol.CryptoUtils;
 import client.controllers.game.NetworkManager;
 
 public class ProfileController implements NetworkManager.NetworkListener {
