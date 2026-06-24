@@ -12,6 +12,7 @@ public class GameRoom {
     private boolean gameOver = false;
     private boolean shipsPlaced1 = false;
     private boolean shipsPlaced2 = false;
+    private String winner;
 
     public GameRoom(ClientHandler p1, ClientHandler p2) {
         this.player1 = p1;
@@ -63,8 +64,6 @@ public class GameRoom {
         }
 
         player.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Ships placed! Waiting for opponent..."));
-
-        System.out.println("shipsPlaced1=" + shipsPlaced1 + ", shipsPlaced2=" + shipsPlaced2);
 
         if (shipsPlaced1 && shipsPlaced2) {
             System.out.println("=== BOTH PLAYERS PLACED SHIPS! STARTING GAME! ===");
@@ -118,11 +117,22 @@ public class GameRoom {
 
                 if (checkWin(targetBoard)) {
                     gameOver = true;
-                    String winner = attacker.getUsername();
+                    winner = attacker.getUsername();
+                    String loser = defender.getUsername();
+
+                    System.out.println("=== GAME OVER ===");
+                    System.out.println("Winner: " + winner);
+                    System.out.println("Loser: " + loser);
+                    System.out.println("Saving stats to database...");
+
+                    DatabaseManager.updatePlayerStats(winner, loser);
+
                     attacker.sendPacket(new MessagePacket(MessagePacket.Type.GAME_OVER, "SERVER", winner));
                     defender.sendPacket(new MessagePacket(MessagePacket.Type.GAME_OVER, "SERVER", winner));
                     attacker.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "GAME_OVER:" + winner));
                     defender.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "GAME_OVER:" + winner));
+
+                    System.out.println("Game over packets sent");
                 }
             } else {
                 attacker.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "GAME_UPDATE:HIT," + x + "," + y));
@@ -148,9 +158,7 @@ public class GameRoom {
 
     private boolean checkIfShipIsSunk(int[][] board, int x, int y, boolean[][] visited) {
         if (x < 0 || x >= 10 || y < 0 || y >= 10 || visited[x][y]) return true;
-
         if (board[x][y] == 1) return false;
-
         if (board[x][y] != 3) return true;
 
         visited[x][y] = true;

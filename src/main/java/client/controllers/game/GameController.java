@@ -1,8 +1,12 @@
 package client.controllers.game;
 
+import client.controllers.auth.ProfileController;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
+import javafx.stage.Stage;
 import protocol.MessagePacket;
 
 import java.io.IOException;
@@ -11,12 +15,12 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 public class GameController implements ChatManager.ChatListener, NetworkManager.NetworkListener, BoardManager.BoardClickListener {
+
     @FXML private GridPane playerBoardGrid;
     @FXML private GridPane opponentBoardGrid;
     @FXML private TextArea chatArea;
     @FXML private TextField chatField;
     @FXML private Button autoPlaceButton;
-    @FXML private Button sendButton;
     @FXML private Label statusLabel;
     @FXML private Label playerNameLabel;
     @FXML private Label opponentNameLabel;
@@ -25,63 +29,45 @@ public class GameController implements ChatManager.ChatListener, NetworkManager.
 
     private BoardManager boardManager;
     private ChatManager chatManager;
-    private ShipPlacer shipPlacer;
     private NetworkManager networkManager;
-
     private String username;
-    private String opponentUsername;
-    private boolean shipsPlaced = false;
     private boolean isMyTurn = false;
     private boolean gameOver = false;
+    private ProfileController profileController;
+    private Stage profileStage;
 
     public void initializeConnection(Socket socket, ObjectOutputStream out, ObjectInputStream in, String username) {
-        this.username = username;
-
-        if (playerNameLabel != null) {
+        try {
+            this.username = username;
             playerNameLabel.setText(username);
-        }
-        if (opponentNameLabel != null) {
             opponentNameLabel.setText("Waiting...");
+
+            boardManager = new BoardManager(playerBoardGrid, opponentBoardGrid);
+            boardManager.setBoardClickListener(this);
+            boardManager.createBoards();
+
+            networkManager = new NetworkManager(socket, out, in);
+            networkManager.addListener(this);
+            networkManager.startListening();
+
+            chatManager = new ChatManager(chatArea, chatField, networkManager.getOutputStream(), username);
+            chatManager.setListener(this);
+
+            updateShipCount();
+            updateStatus("Place your ships", "#94a3b8");
+            updateOpponentShipCount(0);
+        } catch (Exception e) {
+            throw new RuntimeException("Game init failed", e);
         }
-
-        boardManager = new BoardManager(playerBoardGrid, opponentBoardGrid);
-        boardManager.setBoardClickListener(this);
-        boardManager.createBoards();
-
-        shipPlacer = new ShipPlacer(boardManager);
-
-        networkManager = new NetworkManager(socket, out, in);
-        networkManager.setListener(this);
-        networkManager.startListening();
-
-        chatManager = new ChatManager(chatArea, chatField, networkManager.getOutputStream(), username);
-        chatManager.setListener(this);
-
-        updateShipCount();
-        updateStatus("Place your ships", "#94a3b8");
-        updateOpponentShipCount(0);
     }
 
     @Override
     public void onShot(int x, int y) {
-        System.out.println("onShot called: (" + x + "," + y + "), isMyTurn=" + isMyTurn + ", gameOver=" + gameOver);
-
-        if (!isMyTurn) {
-            chatManager.appendSystemMessageDirect("It's not your turn!");
-            return;
-        }
-
-        if (gameOver) {
-            chatManager.appendSystemMessageDirect("Game is over!");
-            return;
-        }
+        if (!isMyTurn) { chatManager.appendSystemMessageDirect("It's not your turn!"); return; }
+        if (gameOver) { chatManager.appendSystemMessageDirect("Game is over!"); return; }
 
         try {
-            MessagePacket shotPacket = new MessagePacket(
-                    MessagePacket.Type.SHOT, username, x, y
-            );
-            networkManager.sendPacket(shotPacket);
-            System.out.println("Shot sent to server");
+            networkManager.sendPacket(new MessagePacket(MessagePacket.Type.SHOT, username, x, y));
         } catch (IOException e) {
             chatManager.appendSystemMessageDirect("Failed to send shot: " + e.getMessage());
         }
@@ -89,87 +75,40 @@ public class GameController implements ChatManager.ChatListener, NetworkManager.
 
     @FXML
     private void handleAutoPlace() {
-        shipPlacer.generateRandomBoard();
-        shipsPlaced = true;
+        ShipPlacer placer = new ShipPlacer(boardManager);
+        placer.generateRandomBoard();
         autoPlaceButton.setDisable(true);
         boardManager.updateBoardDisplay();
         updateShipCount();
         updateStatus("Ships placed! ✓", "#22c55e");
-        sendShipsToServer();
-    }
 
-    private void sendShipsToServer() {
         try {
-            String shipData = boardManager.getShipData();
-            MessagePacket shipPacket = new MessagePacket(
-                    MessagePacket.Type.SYSTEM,
-                    username,
-                    "SHIPS:" + shipData
-            );
-            networkManager.sendPacket(shipPacket);
+            networkManager.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, username, "SHIPS:" + boardManager.getShipData()));
             chatManager.appendSystemMessageDirect("Ships placed successfully!");
         } catch (IOException e) {
             updateStatus("Error: " + e.getMessage(), "#ef4444");
-            chatManager.appendSystemMessageDirect("Failed to send ships: " + e.getMessage());
         }
     }
 
     @FXML
-    private void handleSendChat() {
-        chatManager.sendMessage();
-    }
+    private void handleSendChat() { chatManager.sendMessage(); }
 
-    private void updateShipCount() {
-        int count = boardManager.countShips();
-        if (playerShipCount != null) {
-            playerShipCount.setText(String.valueOf(count));
-        }
-    }
-
-    private void updateOpponentShipCount(int count) {
-        if (opponentShipCount != null) {
-            opponentShipCount.setText(String.valueOf(count));
-        }
-    }
-
+    private void updateShipCount() { playerShipCount.setText(String.valueOf(boardManager.countShips())); }
+    private void updateOpponentShipCount(int count) { opponentShipCount.setText(String.valueOf(count)); }
     private void updateStatus(String status, String color) {
-        if (statusLabel != null) {
-            statusLabel.setText(status);
-            statusLabel.setStyle("-fx-text-fill: " + color + ";");
-        }
-    }
-
-    public void shutdown() {
-        if (networkManager != null) {
-            networkManager.close();
-        }
+        statusLabel.setText(status);
+        statusLabel.setStyle("-fx-text-fill: " + color + ";");
     }
 
     @Override
-    public void onMessageReceived(String sender, String message) {
-    }
+    public void onMessageReceived(String sender, String message) {}
 
     @Override
     public void onSystemMessage(String message) {
         if (message == null) return;
-        System.out.println("SYSTEM MESSAGE: " + message);
-
-        if (message.startsWith("SHIPS_ACK:")) {
-            chatManager.appendSystemMessageDirect("OK " + message.substring(10));
-            return;
-        }
-
-        if (message.equals("Ships placed! Waiting for opponent...")) {
-            chatManager.appendSystemMessageDirect("OK Ships placed! Waiting for opponent...");
-            updateStatus("Waiting for opponent...", "#f59e0b");
-            return;
-        }
 
         if (message.startsWith("OPPONENT:")) {
-            opponentUsername = message.substring(9);
-            if (opponentNameLabel != null) {
-                opponentNameLabel.setText(opponentUsername);
-            }
+            opponentNameLabel.setText(message.substring(9));
             updateStatus("Waiting for opponent to place ships...", "#f59e0b");
             chatManager.appendSystemMessageDirect("Waiting for opponent to place ships...");
             isMyTurn = false;
@@ -180,7 +119,6 @@ public class GameController implements ChatManager.ChatListener, NetworkManager.
             isMyTurn = true;
             updateStatus("Your turn!", "#22c55e");
             chatManager.appendSystemMessageDirect("Game started! Your turn!");
-            System.out.println("isMyTurn set to TRUE");
             return;
         }
 
@@ -188,37 +126,6 @@ public class GameController implements ChatManager.ChatListener, NetworkManager.
             isMyTurn = false;
             updateStatus("Opponent's turn...", "#f59e0b");
             chatManager.appendSystemMessageDirect("Game started! Wait for opponent...");
-            System.out.println("isMyTurn set to FALSE");
-            return;
-        }
-
-        if (message.equals("It's not your turn yet!")) {
-            chatManager.appendSystemMessageDirect("Error: " + message);
-            return;
-        }
-
-        if (message.equals("You are not in a game!")) {
-            chatManager.appendSystemMessageDirect("Error: " + message);
-            return;
-        }
-
-        if (message.equals("You are not in a game yet!")) {
-            chatManager.appendSystemMessageDirect("Error: " + message);
-            return;
-        }
-
-        if (message.equals("Wait for both players to place ships!")) {
-            chatManager.appendSystemMessageDirect("Wait: " + message);
-            return;
-        }
-
-        if (message.equals("Invalid coordinates!")) {
-            chatManager.appendSystemMessageDirect("Error: " + message);
-            return;
-        }
-
-        if (message.equals("You already shot there!")) {
-            chatManager.appendSystemMessageDirect("Error: " + message);
             return;
         }
 
@@ -228,26 +135,26 @@ public class GameController implements ChatManager.ChatListener, NetworkManager.
                 String result = parts[0];
                 int x = Integer.parseInt(parts[1]);
                 int y = Integer.parseInt(parts[2]);
-
-                if (result.equals("HIT")) {
-                    boardManager.setOpponentHit(x, y);
-                    chatManager.appendSystemMessageDirect("Hit at (" + x + "," + y + ")!");
-                    isMyTurn = true;
-                    updateStatus("Your turn!", "#22c55e");
-                    System.out.println("isMyTurn set to TRUE (HIT)");
-                } else if (result.equals("MISS")) {
-                    boardManager.setOpponentMiss(x, y);
-                    chatManager.appendSystemMessageDirect("Miss at (" + x + "," + y + ")!");
-                    isMyTurn = false;
-                    updateStatus("Opponent's turn...", "#f59e0b");
-                    System.out.println("isMyTurn set to FALSE (MISS)");
-                } else if (result.equals("SUNK")) {
-                    boardManager.setOpponentSunk(x, y);
-                    chatManager.appendSystemMessageDirect("Ship sunk at (" + x + "," + y + ")!");
-                    isMyTurn = true;
-                    updateStatus("Your turn!", "#22c55e");
-                    System.out.println("isMyTurn set to TRUE (SUNK)");
-                    updateOpponentShipCount(0);
+                switch (result) {
+                    case "HIT":
+                        boardManager.setOpponentHit(x, y);
+                        chatManager.appendSystemMessageDirect("Hit at (" + x + "," + y + ")!");
+                        isMyTurn = true;
+                        updateStatus("Your turn!", "#22c55e");
+                        break;
+                    case "MISS":
+                        boardManager.setOpponentMiss(x, y);
+                        chatManager.appendSystemMessageDirect("Miss at (" + x + "," + y + ")!");
+                        isMyTurn = false;
+                        updateStatus("Opponent's turn...", "#f59e0b");
+                        break;
+                    case "SUNK":
+                        boardManager.setOpponentSunk(x, y);
+                        chatManager.appendSystemMessageDirect("Ship sunk at (" + x + "," + y + ")!");
+                        isMyTurn = true;
+                        updateStatus("Your turn!", "#22c55e");
+                        updateOpponentShipCount(0);
+                        break;
                 }
             }
             return;
@@ -259,28 +166,27 @@ public class GameController implements ChatManager.ChatListener, NetworkManager.
                 String result = parts[0];
                 int x = Integer.parseInt(parts[1]);
                 int y = Integer.parseInt(parts[2]);
-
-                if (result.equals("HIT")) {
-                    boardManager.setPlayerHit(x, y);
-                    chatManager.appendSystemMessageDirect("Your ship was hit at (" + x + "," + y + ")!");
-                    updateShipCount();
-                    isMyTurn = false;
-                    updateStatus("Opponent's turn...", "#f59e0b");
-                    System.out.println("isMyTurn set to FALSE (ENEMY HIT)");
-                } else if (result.equals("MISS")) {
-                    boardManager.setPlayerMiss(x, y);
-                    chatManager.appendSystemMessageDirect("Opponent missed at (" + x + "," + y + ")!");
-                    isMyTurn = true;
-                    updateStatus("Your turn!", "#22c55e");
-                    System.out.println("isMyTurn set to TRUE (ENEMY MISS)");
-                } else if (result.equals("SUNK")) {
-                    boardManager.setPlayerSunk(x, y);
-                    chatManager.appendSystemMessageDirect("Your ship was sunk at (" + x + "," + y + ")!");
-                    updateShipCount();
-                    isMyTurn = false;
-                    updateStatus("Opponent's turn...", "#f59e0b");
-                    System.out.println("isMyTurn set to FALSE (ENEMY SUNK)");
+                switch (result) {
+                    case "HIT":
+                        boardManager.setPlayerHit(x, y);
+                        chatManager.appendSystemMessageDirect("Your ship was hit at (" + x + "," + y + ")!");
+                        isMyTurn = false;
+                        updateStatus("Opponent's turn...", "#f59e0b");
+                        break;
+                    case "MISS":
+                        boardManager.setPlayerMiss(x, y);
+                        chatManager.appendSystemMessageDirect("Opponent missed at (" + x + "," + y + ")!");
+                        isMyTurn = true;
+                        updateStatus("Your turn!", "#22c55e");
+                        break;
+                    case "SUNK":
+                        boardManager.setPlayerSunk(x, y);
+                        chatManager.appendSystemMessageDirect("Your ship was sunk at (" + x + "," + y + ")!");
+                        isMyTurn = false;
+                        updateStatus("Opponent's turn...", "#f59e0b");
+                        break;
                 }
+                updateShipCount();
             }
             return;
         }
@@ -288,88 +194,58 @@ public class GameController implements ChatManager.ChatListener, NetworkManager.
         if (message.startsWith("GAME_OVER:")) {
             gameOver = true;
             String winner = message.substring(10);
-            if (winner.equals(username)) {
-                updateStatus("You win!", "#22c55e");
-                chatManager.appendSystemMessageDirect("Congratulations! You won!");
-            } else {
-                updateStatus("You lose!", "#ef4444");
-                chatManager.appendSystemMessageDirect("You lost! Better luck next time.");
-            }
+            boolean isWin = winner.equals(username);
+            updateStatus(isWin ? "You win!" : "You lose!", isWin ? "#22c55e" : "#ef4444");
+            chatManager.appendSystemMessageDirect(isWin ? "Congratulations! You won!" : "You lost! Better luck next time.");
             autoPlaceButton.setDisable(true);
+            if (profileStage != null && profileStage.isShowing()) refreshProfile();
             return;
         }
 
-        if (message.startsWith("Hit! Your turn again.")) {
-            chatManager.appendSystemMessageDirect(message);
-            isMyTurn = true;
-            updateStatus("Your turn!", "#22c55e");
-            System.out.println("isMyTurn set to TRUE (Hit! Your turn again.)");
-            return;
+        String[] simpleMessages = {
+                "Hit! Your turn again.", "Miss! Opponent's turn.",
+                "Your ship was hit!", "Your ship was sunk!",
+                "Opponent missed! Your turn.", "Ship sunk! Your turn again."
+        };
+        for (String msg : simpleMessages) {
+            if (message.startsWith(msg)) {
+                chatManager.appendSystemMessageDirect(message);
+                if (msg.contains("turn again") || msg.equals("Hit! Your turn again.") || msg.equals("Opponent missed! Your turn.")) {
+                    isMyTurn = true;
+                    updateStatus("Your turn!", "#22c55e");
+                } else if (msg.equals("Miss! Opponent's turn.")) {
+                    isMyTurn = false;
+                    updateStatus("Opponent's turn...", "#f59e0b");
+                }
+                if (msg.equals("Your ship was hit!") || msg.equals("Your ship was sunk!")) {
+                    updateShipCount();
+                }
+                return;
+            }
         }
-
-        if (message.startsWith("Miss! Opponent's turn.")) {
-            chatManager.appendSystemMessageDirect(message);
-            isMyTurn = false;
-            updateStatus("Opponent's turn...", "#f59e0b");
-            System.out.println("isMyTurn set to FALSE (Miss! Opponent's turn.)");
-            return;
-        }
-
-        if (message.startsWith("Your ship was hit!")) {
-            chatManager.appendSystemMessageDirect(message);
-            updateShipCount();
-            return;
-        }
-
-        if (message.startsWith("Your ship was sunk!")) {
-            chatManager.appendSystemMessageDirect(message);
-            updateShipCount();
-            return;
-        }
-
-        if (message.startsWith("Opponent missed! Your turn.")) {
-            chatManager.appendSystemMessageDirect(message);
-            isMyTurn = true;
-            updateStatus("Your turn!", "#22c55e");
-            System.out.println("isMyTurn set to TRUE (Opponent missed! Your turn.)");
-            return;
-        }
-
-        if (message.startsWith("Ship sunk! Your turn again.")) {
-            chatManager.appendSystemMessageDirect(message);
-            isMyTurn = true;
-            updateStatus("Your turn!", "#22c55e");
-            System.out.println("isMyTurn set to TRUE (Ship sunk! Your turn again.)");
-            return;
-        }
-
         chatManager.appendSystemMessageDirect(message);
     }
 
     @Override
     public void onPacketReceived(MessagePacket packet) {
         if (packet == null) return;
-
-        System.out.println("Packet received: " + packet.getType());
-
-        if (packet.getType() == MessagePacket.Type.SYSTEM) {
-            String content = packet.getContent();
-            if (content != null) {
-                onSystemMessage(content);
-            }
-        } else if (packet.getType() == MessagePacket.Type.CHAT) {
-            chatManager.handleIncomingMessage(packet);
-        } else if (packet.getType() == MessagePacket.Type.GAME_OVER) {
-            gameOver = true;
-            String winner = packet.getContent();
-            if (winner != null && winner.equals(username)) {
-                updateStatus("You win!", "#22c55e");
-                chatManager.appendSystemMessageDirect("Congratulations! You won!");
-            } else {
-                updateStatus("You lose!", "#ef4444");
-                chatManager.appendSystemMessageDirect("You lost! Better luck next time.");
-            }
-            autoPlaceButton.setDisable(true);
+        switch (packet.getType()) {
+            case SYSTEM:
+                if (packet.getContent() != null) onSystemMessage(packet.getContent());
+                break;
+            case CHAT:
+                chatManager.handleIncomingMessage(packet);
+                break;
+            case GAME_OVER:
+                gameOver = true;
+                String winner = packet.getContent();
+                boolean isWin = winner != null && winner.equals(username);
+                updateStatus(isWin ? "You win!" : "You lose!", isWin ? "#22c55e" : "#ef4444");
+                chatManager.appendSystemMessageDirect(isWin ? "Congratulations! You won!" : "You lost! Better luck next time.");
+                autoPlaceButton.setDisable(true);
+                if (profileStage != null && profileStage.isShowing()) refreshProfile();
+                break;
+            default: break;
         }
     }
 
@@ -384,5 +260,41 @@ public class GameController implements ChatManager.ChatListener, NetworkManager.
     public void onConnectionError(String error) {
         chatManager.appendSystemMessageDirect("Error: " + error);
         updateStatus("Error: " + error, "#ef4444");
+    }
+
+    @FXML
+    private void handleOpenProfile() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/profile.fxml"));
+            Scene scene = new Scene(loader.load(), 500, 750);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+
+            profileController = loader.getController();
+            profileController.initData(username, networkManager);
+
+            profileStage = new Stage();
+            profileStage.setTitle("Profile - " + username);
+            profileStage.setScene(scene);
+            profileStage.initModality(javafx.stage.Modality.WINDOW_MODAL);
+            profileStage.initOwner(chatField.getScene().getWindow());
+
+            profileStage.setOnCloseRequest(e -> {
+                if (profileController != null) profileController.cleanup();
+                profileStage = null;
+                profileController = null;
+            });
+
+            profileStage.show();
+        } catch (IOException e) {
+            chatManager.appendSystemMessageDirect("Error opening profile: " + e.getMessage());
+        }
+    }
+
+    private void refreshProfile() {
+        if (profileController != null) profileController.loadStats();
+    }
+
+    public void shutdown() {
+        if (networkManager != null) networkManager.close();
     }
 }

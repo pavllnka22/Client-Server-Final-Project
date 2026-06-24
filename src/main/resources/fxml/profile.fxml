@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Rectangle?>
+
+<BorderPane prefHeight="750" prefWidth="500" style="-fx-background-color: #ffffff;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.controllers.auth.ProfileController">
+
+    <top>
+        <VBox style="-fx-background-color: #0f1724; -fx-alignment: center; -fx-padding: 30 20 20 20;">
+            <children>
+                <Label text="👤" style="-fx-font-size: 42; -fx-text-fill: #c9a84c;" />
+                <Label text="My Profile" style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: white; -fx-font-family: 'Segoe UI';" />
+                <Rectangle width="60" height="2" fill="#c9a84c" style="-fx-opacity: 0.4;" />
+            </children>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="18" style="-fx-padding: 30 40 30 40; -fx-background-color: #ffffff;">
+            <children>
+
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <children>
+                        <Label text="Username:" style="-fx-font-size: 14; -fx-font-weight: 600; -fx-text-fill: #475569; -fx-min-width: 100;" />
+                        <Label fx:id="usernameLabel" style="-fx-font-size: 16; -fx-text-fill: #1e293b; -fx-font-weight: 500;" />
+                    </children>
+                </HBox>
+
+                <Rectangle width="420" height="1" fill="#e2e8f0" />
+
+                <Label text="Statistics" style="-fx-font-size: 18; -fx-font-weight: 600; -fx-text-fill: #1e293b; -fx-padding: 4 0;" />
+
+                <VBox spacing="8" style="-fx-background-color: #f8fafc; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 16 20;">
+                    <children>
+                        <HBox spacing="20">
+                            <children>
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label text="Games" style="-fx-font-size: 11; -fx-text-fill: #94a3b8;" />
+                                        <Label fx:id="gamesPlayedLabel" style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: #1e293b;" />
+                                    </children>
+                                </VBox>
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label text="Wins" style="-fx-font-size: 11; -fx-text-fill: #94a3b8;" />
+                                        <Label fx:id="winsLabel" style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: #22c55e;" />
+                                    </children>
+                                </VBox>
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label text="Losses" style="-fx-font-size: 11; -fx-text-fill: #94a3b8;" />
+                                        <Label fx:id="lossesLabel" style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: #ef4444;" />
+                                    </children>
+                                </VBox>
+                                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                                    <children>
+                                        <Label text="Rating" style="-fx-font-size: 11; -fx-text-fill: #94a3b8;" />
+                                        <Label fx:id="ratingLabel" style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: #c9a84c;" />
+                                    </children>
+                                </VBox>
+                            </children>
+                        </HBox>
+                    </children>
+                </VBox>
+
+                <Label text="Recent Games" style="-fx-font-size: 18; -fx-font-weight: 600; -fx-text-fill: #1e293b; -fx-padding: 4 0;" />
+
+                <ScrollPane prefHeight="200" style="-fx-background-color: #f8fafc; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 0;">
+                    <content>
+                        <Label fx:id="historyLabel" wrapText="true" style="-fx-font-size: 13; -fx-text-fill: #1e293b; -fx-padding: 12 16; -fx-background-color: transparent;" />
+                    </content>
+                </ScrollPane>
+
+                <Button fx:id="closeButton" onAction="#handleClose" prefWidth="200" style="-fx-padding: 12; -fx-background-color: #1e293b; -fx-text-fill: white; -fx-border-radius: 10; -fx-background-radius: 10; -fx-cursor: hand; -fx-font-size: 15; -fx-font-weight: 500;" text="Close" />
+
+            </children>
+        </VBox>
+    </center>
+</BorderPane>

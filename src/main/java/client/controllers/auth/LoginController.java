@@ -32,6 +32,7 @@ public class LoginController {
     private ObjectInputStream in;
     private ExecutorService loginExecutor;
     private GameController gameController;
+    private boolean gameOpened = false;
 
     @FXML
     public void initialize() {
@@ -41,13 +42,8 @@ public class LoginController {
             return t;
         });
 
-        passwordField.textProperty().addListener((obs, oldVal, newVal) -> {
-            visiblePasswordField.setText(newVal);
-        });
-
-        visiblePasswordField.textProperty().addListener((obs, oldVal, newVal) -> {
-            passwordField.setText(newVal);
-        });
+        passwordField.textProperty().addListener((obs, oldVal, newVal) -> visiblePasswordField.setText(newVal));
+        visiblePasswordField.textProperty().addListener((obs, oldVal, newVal) -> passwordField.setText(newVal));
 
         showPasswordCheckBox.selectedProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal) {
@@ -85,9 +81,7 @@ public class LoginController {
                 out = new ObjectOutputStream(socket.getOutputStream());
                 in = new ObjectInputStream(socket.getInputStream());
 
-                MessagePacket authRequest = new MessagePacket(
-                        MessagePacket.Type.AUTH_REQUEST, login, "", password
-                );
+                MessagePacket authRequest = new MessagePacket(MessagePacket.Type.AUTH_REQUEST, login, "", password);
                 out.writeObject(authRequest);
                 out.flush();
 
@@ -137,7 +131,6 @@ public class LoginController {
             scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
 
             RegisterController registerController = loader.getController();
-
             Stage stage = new Stage();
             stage.setTitle("BattleShip - Register");
             stage.setScene(scene);
@@ -145,11 +138,7 @@ public class LoginController {
             stage.initOwner(loginButton.getScene().getWindow());
 
             registerController.initData(loginExecutor, socket, out, in, stage);
-
-            stage.setOnCloseRequest((WindowEvent event) -> {
-                stage.close();
-            });
-
+            stage.setOnCloseRequest((WindowEvent event) -> stage.close());
             stage.show();
 
         } catch (IOException e) {
@@ -159,11 +148,7 @@ public class LoginController {
     }
 
     private String getPassword() {
-        if (showPasswordCheckBox.isSelected()) {
-            return visiblePasswordField.getText();
-        } else {
-            return passwordField.getText();
-        }
+        return showPasswordCheckBox.isSelected() ? visiblePasswordField.getText() : passwordField.getText();
     }
 
     private void openGameForm(String username) {
@@ -173,30 +158,34 @@ public class LoginController {
             scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
 
             gameController = loader.getController();
+            gameOpened = true;
 
             Stage stage = new Stage();
             stage.setTitle("BattleShip - " + username);
             stage.setScene(scene);
+            stage.setX(100);
+            stage.setY(100);
+            stage.setMinWidth(800);
+            stage.setMinHeight(600);
 
             stage.setOnCloseRequest((WindowEvent event) -> {
-                if (gameController != null) {
-                    gameController.shutdown();
-                }
-                closeResources();
+                if (gameController != null) gameController.shutdown();
                 Platform.exit();
                 System.exit(0);
             });
 
             gameController.initializeConnection(socket, out, in, username);
-
             stage.show();
+            stage.toFront();
+            stage.requestFocus();
 
             Stage loginStage = (Stage) loginButton.getScene().getWindow();
             loginStage.close();
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             showStatus("Error loading game: " + e.getMessage(), true);
             closeResources();
+            e.printStackTrace();
         }
     }
 
@@ -235,39 +224,14 @@ public class LoginController {
     }
     private void closeResources() {
         try {
-            if (in != null) {
-                in.close();
-                in = null;
-            }
-            if (out != null) {
-                out.close();
-                out = null;
-            }
-            if (socket != null && !socket.isClosed()) {
-                socket.close();
-                socket = null;
-            }
-        } catch (IOException e) {
-        }
+            if (in != null) { in.close(); in = null; }
+            if (out != null) { out.close(); out = null; }
+            if (socket != null && !socket.isClosed()) { socket.close(); socket = null; }
+        } catch (IOException e) { }
     }
 
     private void showStatus(String message, boolean isError) {
         statusLabel.setText(message);
         statusLabel.setStyle("-fx-text-fill: " + (isError ? "#ef4444" : "#22c55e") + "; -fx-font-size: 13;");
-    }
-
-    public void shutdown() {
-        if (loginExecutor != null) {
-            loginExecutor.shutdownNow();
-            try {
-                if (!loginExecutor.awaitTermination(3, java.util.concurrent.TimeUnit.SECONDS)) {
-                    loginExecutor.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                loginExecutor.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-        }
-        closeResources();
     }
 }
