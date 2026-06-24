@@ -34,7 +34,7 @@ public class DatabaseManager {
                 login VARCHAR(50) UNIQUE NOT NULL,
                 password_hash VARCHAR(256) NOT NULL,
                 role VARCHAR(20) NOT NULL DEFAULT 'USER',
-                is_banned BOOLEAN DEFAULT FALSE,
+                is_banned BOOLEAN NOT NULL DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """;
@@ -267,6 +267,10 @@ public class DatabaseManager {
             System.err.println("Error banning user: " + e.getMessage());
             return false;
         }
+    }
+
+    public static boolean banUserInDB(String username) {
+        return banUser(username);
     }
 
     private static void createAdminIfNotExist() {
