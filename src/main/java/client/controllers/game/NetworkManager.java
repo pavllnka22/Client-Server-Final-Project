@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -15,7 +17,7 @@ public class NetworkManager {
     private Socket socket;
     private ObjectOutputStream out;
     private ObjectInputStream in;
-    private NetworkListener listener;
+    private List<NetworkListener> listeners = new CopyOnWriteArrayList<>();
     private ExecutorService executor;
     private volatile boolean running = false;
 
@@ -36,8 +38,21 @@ public class NetworkManager {
         });
     }
 
+    public void addListener(NetworkListener listener) {
+        if (listener != null && !listeners.contains(listener)) {
+            listeners.add(listener);
+        }
+    }
+
+    public void removeListener(NetworkListener listener) {
+        listeners.remove(listener);
+    }
+
     public void setListener(NetworkListener listener) {
-        this.listener = listener;
+        listeners.clear();
+        if (listener != null) {
+            listeners.add(listener);
+        }
     }
 
     public void startListening() {
@@ -54,14 +69,18 @@ public class NetworkManager {
                         break;
                     }
                     Platform.runLater(() -> {
-                        if (listener != null) {
-                            listener.onPacketReceived(incoming);
+                        for (NetworkListener listener : listeners) {
+                            try {
+                                listener.onPacketReceived(incoming);
+                            } catch (Exception e) {
+                                System.err.println("Error in listener: " + e.getMessage());
+                            }
                         }
                     });
                 } catch (IOException e) {
                     if (running) {
                         Platform.runLater(() -> {
-                            if (listener != null) {
+                            for (NetworkListener listener : listeners) {
                                 listener.onConnectionError("Connection lost: " + e.getMessage());
                                 listener.onConnectionLost();
                             }
@@ -70,7 +89,7 @@ public class NetworkManager {
                     break;
                 } catch (ClassNotFoundException e) {
                     Platform.runLater(() -> {
-                        if (listener != null) {
+                        for (NetworkListener listener : listeners) {
                             listener.onConnectionError("Protocol error: " + e.getMessage());
                         }
                     });
@@ -107,6 +126,7 @@ public class NetworkManager {
 
     public void close() {
         stopListening();
+        listeners.clear();
         try {
             if (in != null) {
                 in.close();

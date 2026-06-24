@@ -22,7 +22,6 @@
                 <HBox alignment="CENTER_LEFT" spacing="14">
                     <children>
                         <Label text="⚓" style="-fx-font-size: 22; -fx-text-fill: #c9a84c; -fx-opacity: 0.8;" />
-
                         <VBox spacing="0">
                             <children>
                                 <HBox spacing="8" alignment="CENTER_LEFT">
@@ -33,9 +32,21 @@
                                 <Rectangle width="80" height="2" fill="#c9a84c" style="-fx-opacity: 0.4; -fx-arc-width: 1; -fx-arc-height: 1;" />
                             </children>
                         </VBox>
-
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <children>
+                                <Label text="Player:" style="-fx-text-fill: #94a3b8; -fx-font-size: 13;" />
+                                <Label fx:id="playerNameLabel" style="-fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold;" />
+                            </children>
+                        </HBox>
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <children>
+                                <Label text="Opponent:" style="-fx-text-fill: #94a3b8; -fx-font-size: 13;" />
+                                <Label fx:id="opponentNameLabel" style="-fx-text-fill: #f59e0b; -fx-font-size: 14; -fx-font-weight: bold;" />
+                            </children>
+                        </HBox>
+                        <Label fx:id="statusLabel" style="-fx-text-fill: #94a3b8; -fx-font-size: 13; -fx-padding: 0 10;" text="Ready" />
                         <HBox HBox.hgrow="ALWAYS" />
-
+                        <Button onAction="#handleOpenProfile" text="👤 Profile" style="-fx-background-color: transparent; -fx-border-color: #c9a84c; -fx-text-fill: #c9a84c; -fx-border-radius: 8; -fx-padding: 8 16; -fx-cursor: hand;" />
                         <Button fx:id="autoPlaceButton" onAction="#handleAutoPlace" text="✦ Place Ships" styleClass="button, button-primary" />
                     </children>
                 </HBox>
@@ -45,9 +56,7 @@
 
     <center>
         <HBox spacing="20" alignment="TOP_CENTER" style="-fx-padding: 20 24 24 24; -fx-background-color: #eef0f3;">
-
             <children>
-
                 <VBox spacing="12" prefWidth="380" styleClass="panel">
                     <children>
                         <HBox alignment="CENTER_LEFT" spacing="12">
@@ -62,7 +71,6 @@
                                 </HBox>
                             </children>
                         </HBox>
-
                         <VBox spacing="4" alignment="TOP_CENTER">
                             <HBox spacing="0" alignment="CENTER_LEFT">
                                 <children>
@@ -84,7 +92,6 @@
                                     </HBox>
                                 </children>
                             </HBox>
-
                             <HBox spacing="0" alignment="TOP_CENTER">
                                 <children>
                                     <VBox spacing="0">
@@ -101,7 +108,6 @@
                                             <Label text="10" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32; -fx-font-size: 9;" />
                                         </children>
                                     </VBox>
-
                                     <GridPane fx:id="playerBoardGrid" prefHeight="352" prefWidth="352" styleClass="game-board-container" />
                                 </children>
                             </HBox>
@@ -123,7 +129,6 @@
                                 </HBox>
                             </children>
                         </HBox>
-
                         <VBox spacing="4" alignment="TOP_CENTER">
                             <HBox spacing="0" alignment="CENTER_LEFT">
                                 <children>
@@ -145,7 +150,6 @@
                                     </HBox>
                                 </children>
                             </HBox>
-
                             <HBox spacing="0" alignment="TOP_CENTER">
                                 <children>
                                     <VBox spacing="0">
@@ -162,7 +166,6 @@
                                             <Label text="10" styleClass="coord-label" style="-fx-min-width: 24; -fx-min-height: 32; -fx-font-size: 9;" />
                                         </children>
                                     </VBox>
-
                                     <GridPane fx:id="opponentBoardGrid" prefHeight="352" prefWidth="352" styleClass="game-board-container" />
                                 </children>
                             </HBox>
@@ -171,30 +174,25 @@
                 </VBox>
 
                 <VBox spacing="0" prefWidth="280" styleClass="chat-panel">
-
                     <HBox alignment="CENTER_LEFT" spacing="12" styleClass="chat-panel-header">
                         <children>
                             <Label text="💬" style="-fx-font-size: 16; -fx-text-fill: #c9a84c;" />
                             <Label text="Chat" style="-fx-text-fill: #c9a84c; -fx-font-size: 14; -fx-font-weight: 600; -fx-letter-spacing: 0.3;" />
                         </children>
                     </HBox>
-
                     <ScrollPane style="-fx-background-color: transparent; -fx-border-width: 0; -fx-fit-to-width: true;" VBox.vgrow="ALWAYS">
                         <content>
                             <TextArea fx:id="chatArea" editable="false" wrapText="true" prefHeight="310" styleClass="text-area" />
                         </content>
                         <VBox.vgrow>ALWAYS</VBox.vgrow>
                     </ScrollPane>
-
                     <HBox spacing="10" styleClass="chat-input-area">
                         <children>
                             <TextField fx:id="chatField" onAction="#handleSendChat" promptText="Type a message..." styleClass="text-field" HBox.hgrow="ALWAYS" />
                             <Button fx:id="sendButton" onAction="#handleSendChat" text="→" styleClass="button, button-send" style="-fx-padding: 8 18; -fx-font-size: 16; -fx-font-weight: 400;" />
                         </children>
                     </HBox>
-
                 </VBox>
-
             </children>
         </HBox>
     </center>

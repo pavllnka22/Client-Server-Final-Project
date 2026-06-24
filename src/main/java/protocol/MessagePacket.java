@@ -8,7 +8,8 @@ public class MessagePacket implements Serializable {
         CONNECT, CHAT, SHOT, SYSTEM,
         AUTH_REQUEST, AUTH_SUCCESS, AUTH_FAIL,
         REGISTER_REQUEST, REGISTER_SUCCESS, REGISTER_FAIL,
-        GAME_UPDATE, GAME_OVER
+        GAME_UPDATE, GAME_OVER,
+        STATS_REQUEST, STATS_RESPONSE
     }
 
     private Type type;
@@ -34,7 +35,6 @@ public class MessagePacket implements Serializable {
     public MessagePacket(Type type, String sender, int x, int y) {
         this.type = type;
         this.sender = sender;
-        this.content = content;
         this.x = x;
         this.y = y;
     }

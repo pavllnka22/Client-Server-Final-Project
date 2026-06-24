@@ -10,6 +10,7 @@ public class ClientHandler implements Runnable {
     private ObjectOutputStream out;
     private String username;
     private GameRoom gameRoom;
+    private boolean isAuthenticated = false;
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -26,8 +27,6 @@ public class ClientHandler implements Runnable {
     @Override
     public void run() {
         try {
-            boolean isAuthenticated = false;
-
             while (!isAuthenticated) {
                 MessagePacket authPacket = (MessagePacket) in.readObject();
                 if (authPacket == null) return;
@@ -39,6 +38,10 @@ public class ClientHandler implements Runnable {
                     String role = DatabaseManager.authenticateUser(login, password);
 
                     if (role != null) {
+                        if (role.equals("BANNED")) {
+                            sendPacket(new MessagePacket(MessagePacket.Type.AUTH_FAIL, "SERVER", "You are banned!"));
+                            continue;
+                        }
                         this.username = login;
                         isAuthenticated = true;
 
@@ -99,6 +102,14 @@ public class ClientHandler implements Runnable {
                             sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Error: No game room!"));
                         }
                     }
+                } else if (packet.getType() == MessagePacket.Type.STATS_REQUEST) {
+                    System.out.println("Getting stats for: " + username);
+                    String stats = DatabaseManager.getPlayerStats(username);
+                    if (stats != null) {
+                        sendPacket(new MessagePacket(MessagePacket.Type.STATS_RESPONSE, "SERVER", stats));
+                    } else {
+                        sendPacket(new MessagePacket(MessagePacket.Type.STATS_RESPONSE, "SERVER", "No stats available"));
+                    }
                 }
             }
         } catch (EOFException _) {
@@ -130,11 +141,32 @@ public class ClientHandler implements Runnable {
 
     private void closeConnection() {
         try {
+            if (gameRoom != null) {
+                ClientHandler opponent = getOpponent();
+                if (opponent != null && !gameOver()) {
+                    String winner = opponent.getUsername();
+                    String loser = this.username;
+                    DatabaseManager.updatePlayerStats(winner, loser);
+                    opponent.sendPacket(new MessagePacket(MessagePacket.Type.GAME_OVER, "SERVER", winner));
+                    opponent.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "GAME_OVER:" + winner));
+                    opponent.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Opponent disconnected! You win!"));
+                }
+            }
             if (in != null) in.close();
             if (out != null) out.close();
             if (clientSocket != null) clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private boolean gameOver() {
+        try {
+            java.lang.reflect.Field field = GameRoom.class.getDeclaredField("gameOver");
+            field.setAccessible(true);
+            return (boolean) field.get(gameRoom);
+        } catch (Exception e) {
+            return false;
         }
     }
 
