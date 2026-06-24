@@ -8,6 +8,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 import protocol.MessagePacket;
+import protocol.CryptoUtils;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -63,12 +64,18 @@ public class GameController implements ChatManager.ChatListener, NetworkManager.
 
     @Override
     public void onShot(int x, int y) {
-        if (!isMyTurn) { chatManager.appendSystemMessageDirect("It's not your turn!"); return; }
-        if (gameOver) { chatManager.appendSystemMessageDirect("Game is over!"); return; }
+        if (!isMyTurn) {
+            chatManager.appendSystemMessageDirect("It's not your turn!");
+            return;
+        }
+        if (gameOver) {
+            chatManager.appendSystemMessageDirect("Game is over!");
+            return;
+        }
 
         try {
             networkManager.sendPacket(new MessagePacket(MessagePacket.Type.SHOT, username, x, y));
-        } catch (IOException e) {
+        } catch (Exception e) {
             chatManager.appendSystemMessageDirect("Failed to send shot: " + e.getMessage());
         }
     }
@@ -85,23 +92,32 @@ public class GameController implements ChatManager.ChatListener, NetworkManager.
         try {
             networkManager.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, username, "SHIPS:" + boardManager.getShipData()));
             chatManager.appendSystemMessageDirect("Ships placed successfully!");
-        } catch (IOException e) {
+        } catch (Exception e) {
             updateStatus("Error: " + e.getMessage(), "#ef4444");
         }
     }
 
     @FXML
-    private void handleSendChat() { chatManager.sendMessage(); }
+    private void handleSendChat() {
+        chatManager.sendMessage();
+    }
 
-    private void updateShipCount() { playerShipCount.setText(String.valueOf(boardManager.countShips())); }
-    private void updateOpponentShipCount(int count) { opponentShipCount.setText(String.valueOf(count)); }
+    private void updateShipCount() {
+        playerShipCount.setText(String.valueOf(boardManager.countShips()));
+    }
+
+    private void updateOpponentShipCount(int count) {
+        opponentShipCount.setText(String.valueOf(count));
+    }
+
     private void updateStatus(String status, String color) {
         statusLabel.setText(status);
         statusLabel.setStyle("-fx-text-fill: " + color + ";");
     }
 
     @Override
-    public void onMessageReceived(String sender, String message) {}
+    public void onMessageReceived(String sender, String message) {
+    }
 
     @Override
     public void onSystemMessage(String message) {
@@ -245,7 +261,8 @@ public class GameController implements ChatManager.ChatListener, NetworkManager.
                 autoPlaceButton.setDisable(true);
                 if (profileStage != null && profileStage.isShowing()) refreshProfile();
                 break;
-            default: break;
+            default:
+                break;
         }
     }
 

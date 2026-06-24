@@ -1,11 +1,10 @@
 package client.controllers.game;
 
 import javafx.application.Platform;
+import protocol.CryptoUtils;
 import protocol.MessagePacket;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -64,7 +63,7 @@ public class NetworkManager {
         executor.submit(() -> {
             while (running && !Thread.currentThread().isInterrupted()) {
                 try {
-                    MessagePacket incoming = (MessagePacket) in.readObject();
+                    MessagePacket incoming = (MessagePacket) CryptoUtils.receiveEncrypted(in);
                     if (incoming == null) {
                         break;
                     }
@@ -94,18 +93,24 @@ public class NetworkManager {
                         }
                     });
                     break;
+                } catch (Exception e) {
+                    Platform.runLater(() -> {
+                        for (NetworkListener listener : listeners) {
+                            listener.onConnectionError("Decryption error: " + e.getMessage());
+                        }
+                    });
+                    break;
                 }
             }
         });
     }
 
-    public void sendPacket(MessagePacket packet) throws IOException {
+    public void sendPacket(MessagePacket packet) throws Exception {
         if (!isConnected()) {
             throw new IOException("Not connected to server");
         }
         synchronized (out) {
-            out.writeObject(packet);
-            out.flush();
+            CryptoUtils.sendEncrypted(out, packet);
         }
     }
 

@@ -5,6 +5,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 import protocol.MessagePacket;
+import protocol.CryptoUtils;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -97,10 +98,9 @@ public class RegisterController {
                 MessagePacket registerRequest = new MessagePacket(
                         MessagePacket.Type.REGISTER_REQUEST, login, "", password
                 );
-                out.writeObject(registerRequest);
-                out.flush();
+                CryptoUtils.sendEncrypted(out, registerRequest);
 
-                MessagePacket response = (MessagePacket) in.readObject();
+                MessagePacket response = (MessagePacket) CryptoUtils.receiveEncrypted(in);
 
                 if (response.getType() == MessagePacket.Type.REGISTER_SUCCESS) {
                     Platform.runLater(() -> {
@@ -115,14 +115,9 @@ public class RegisterController {
                     });
                 }
 
-            } catch (IOException e) {
+            } catch (Exception e) {
                 Platform.runLater(() -> {
                     showStatus("Connection error: " + e.getMessage(), true);
-                    registerButton.setDisable(false);
-                });
-            } catch (ClassNotFoundException e) {
-                Platform.runLater(() -> {
-                    showStatus("Protocol error", true);
                     registerButton.setDisable(false);
                 });
             }

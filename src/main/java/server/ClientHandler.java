@@ -2,6 +2,7 @@ package server;
 
 import protocol.AdminActions;
 import protocol.MessagePacket;
+import protocol.CryptoUtils;
 
 import java.io.*;
 import java.net.Socket;
@@ -32,7 +33,7 @@ public class ClientHandler implements Runnable {
             boolean isAuthenticated = false;
 
             while (!isAuthenticated) {
-                Object obj = in.readObject();
+                Object obj = CryptoUtils.receiveEncrypted(in);
                 if (obj == null) return;
 
                 if (obj instanceof MessagePacket authPacket) {
@@ -86,7 +87,7 @@ public class ClientHandler implements Runnable {
             }
 
             while (true) {
-                Object obj = in.readObject();
+                Object obj = CryptoUtils.receiveEncrypted(in);
                 if (obj == null) break;
 
                 if (obj instanceof MessagePacket packet) {
@@ -220,9 +221,8 @@ public class ClientHandler implements Runnable {
 
     public void sendPacket(MessagePacket packet) {
         try {
-            out.writeObject(packet);
-            out.flush();
-        } catch (IOException e) {
+            CryptoUtils.sendEncrypted(out, packet);
+        } catch (Exception e) {
             System.out.println("Failed to send packet to " + username + ": " + e.getMessage());
         }
     }

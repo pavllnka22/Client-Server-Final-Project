@@ -5,6 +5,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import protocol.AdminActions;
 import protocol.MessagePacket;
+import protocol.CryptoUtils;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -91,9 +92,8 @@ public class AdminController {
             try {
                 if (out == null) return;
                 AdminActions adminActions = new AdminActions(command, target);
-                out.writeObject(adminActions);
-                out.flush();
-            } catch (IOException e) {
+                CryptoUtils.sendEncrypted(out, adminActions);
+            } catch (Exception e) {
                 Platform.runLater(() -> adminStatusLabel.setText("Network error: " + e.getMessage()));
             }
         });
@@ -103,7 +103,7 @@ public class AdminController {
         new Thread(() -> {
             try {
                 while (running) {
-                    Object obj = in.readObject();
+                    Object obj = CryptoUtils.receiveEncrypted(in);
                     if (obj == null) break;
                     if (obj instanceof MessagePacket mp) {
                         String content = mp.getContent();
@@ -117,12 +117,10 @@ public class AdminController {
                         });
                     }
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 if (running) {
                     Platform.runLater(() -> adminStatusLabel.setText("Connection lost!"));
                 }
-            } catch (ClassNotFoundException e) {
-                Platform.runLater(() -> adminStatusLabel.setText("Protocol error!"));
             }
         }, "AdminReader-Thread").start();
     }
