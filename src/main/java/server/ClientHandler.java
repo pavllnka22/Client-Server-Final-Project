@@ -2,6 +2,7 @@ package server;
 
 import protocol.AdminActions;
 import protocol.MessagePacket;
+
 import java.io.*;
 import java.net.Socket;
 
@@ -56,13 +57,11 @@ public class ClientHandler implements Runnable {
                                     "Authorisation successful! Role: " + role));
 
                             if ("USER".equals(role)) {
-                                System.out.println("[GAME] User " + login + " added to the wait list.");
                                 SimpleServer.matchPlayer(this);
                             } else {
                                 System.out.println("[ADMIN] " + login + " is now monitoring.");
                             }
                         } else {
-                            System.out.println("Failed login attempt: " + login);
                             sendPacket(new MessagePacket(MessagePacket.Type.AUTH_FAIL, "SERVER",
                                     "Invalid username or password!"));
                         }
@@ -127,6 +126,13 @@ public class ClientHandler implements Runnable {
                         }
                         default -> {
                         }
+                    }
+                } else if (obj instanceof AdminActions adminActions) {
+                    if ("ADMIN".equals(this.role)) {
+                        handleAdminAction(adminActions);
+                    } else {
+                        sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER",
+                                "Not allowed to perform this action!"));
                     }
                 }
             }
