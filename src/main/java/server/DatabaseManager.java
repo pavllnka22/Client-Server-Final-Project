@@ -141,4 +141,18 @@ public class DatabaseManager {
             return false;
         }
     }
+
+    public static boolean unbanUserInDB(String login) {
+        String sql = "UPDATE users SET is_banned = FALSE WHERE login = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, login);
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+
+        } catch (SQLException e) {
+            return false;
+        }
+    }
 }

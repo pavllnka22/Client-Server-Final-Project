@@ -43,7 +43,7 @@ public class ClientHandler implements Runnable {
                     String role = DatabaseManager.authenticateUser(login, password);
 
                     if ("BANNED".equals(role)) {
-                        sendPacket(new MessagePacket(MessagePacket.Type.AUTH_FAIL, "SERVER", "Ваш акаунт забанено адміністратором!"));
+                        sendPacket(new MessagePacket(MessagePacket.Type.AUTH_FAIL, "SERVER", "Your account was banned!"));
                     } else if (role != null) {
                         this.username = login;
                         this.role = role;
@@ -168,6 +168,17 @@ public class ClientHandler implements Runnable {
             case GET_MONITORING:
                 String stats = SimpleServer.getNetworkMonitoringStatistics();
                 sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", stats));
+                break;
+
+            case UNBAN:
+                String userToUnban = packet.getTargetUsername();
+                boolean isUnbanned = DatabaseManager.unbanUserInDB(userToUnban);
+
+                if (isUnbanned) {
+                    sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "User " + userToUnban + " unbanned!"));
+                } else {
+                    sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "User " + userToUnban + " not found!."));
+                }
                 break;
         }
     }
