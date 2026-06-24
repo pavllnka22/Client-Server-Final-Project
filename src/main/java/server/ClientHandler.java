@@ -86,7 +86,6 @@ public class ClientHandler implements Runnable {
                 }
             }
 
-            // Основний цикл обробки пакетів (після автентифікації)
             while (true) {
                 Object obj = in.readObject();
                 if (obj == null) break;
@@ -170,6 +169,16 @@ public class ClientHandler implements Runnable {
             case GET_MONITORING -> {
                 String stats = SimpleServer.getNetworkMonitoringStatistics();
                 sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", stats));
+            }
+            case UNBAN -> {
+                String userToUnban = packet.getTargetUsername();
+                boolean isUnbanned = DatabaseManager.unbanUserInDB(userToUnban);
+
+                if (isUnbanned) {
+                    sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "User " + userToUnban + " unbanned!"));
+                } else {
+                    sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "User " + userToUnban + " not found!"));
+                }
             }
         }
     }
