@@ -72,6 +72,21 @@ public class AdminController {
         });
     }
 
+    @FXML
+    public void handleUnban() {
+        String target = targetUserField.getText().trim();
+        if (target.isEmpty()) {
+            adminStatusLabel.setText("Set a username to unban!");
+            return;
+        }
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Unban " + target + "?", ButtonType.YES, ButtonType.NO);
+        alert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.YES) {
+                sendAdminAction(AdminActions.Command.UNBAN, target);
+            }
+        });
+    }
 
     private void sendAdminAction(AdminActions.Command command, String target) {
         new Thread(() -> {
@@ -91,7 +106,7 @@ public class AdminController {
     }
 
     private void startAdminReader() {
-        executor.submit(() -> {
+        new Thread(() -> {
             try {
                 while (true) {
                     Object obj = in.readObject();
@@ -99,21 +114,23 @@ public class AdminController {
 
                     if (obj instanceof MessagePacket) {
                         MessagePacket mp = (MessagePacket) obj;
-
-                        System.out.println("[ADMIN]: " + mp.getContent());
+                        String content = mp.getContent();
 
                         Platform.runLater(() -> {
-                            if (mp.getContent().contains("--- Network monitoring ---") || mp.getContent().contains("=== Network monitoring ===")) {
-                                monitoringTextArea.setText(mp.getContent());
+                            if (content.contains("Active TCP-connections") ||
+                                    content.contains("threads") ||
+                                    content.contains("MONITORING")) {
+
+                                monitoringTextArea.setText(content);
                             } else {
-                                adminStatusLabel.setText(mp.getContent());
+                                adminStatusLabel.setText(content);
                             }
                         });
                     }
                 }
             } catch (Exception e) {
-                Platform.runLater(() -> adminStatusLabel.setText("network error: ."));
+                Platform.runLater(() -> adminStatusLabel.setText("Connection lost."));
             }
-        });
+        }).start();
     }
     }

@@ -11,7 +11,7 @@
     </padding>
 
     <top>
-        <Label text="Панель Адміністратора Сервера" style="-fx-font-size: 18; -fx-font-weight: bold;" BorderPane.alignment="CENTER"/>
+        <Label text="Admin Panel" style="-fx-font-size: 18; -fx-font-weight: bold;" BorderPane.alignment="CENTER"/>
     </top>
 
     <center>
@@ -40,6 +40,7 @@
             <HBox spacing="10">
                 <Button text="Kick" onAction="#handleKick" HBox.hgrow="ALWAYS" maxWidth="Infinity" style="-fx-background-color: #f59e0b; -fx-text-fill: white;"/>
                 <Button text="Ban" onAction="#handleBan" HBox.hgrow="ALWAYS" maxWidth="Infinity" style="-fx-background-color: #ef4444; -fx-text-fill: white;"/>
+                <Button text="Unban" onAction="#handleUnban" HBox.hgrow="ALWAYS" maxWidth="Infinity" style="-fx-background-color: #10b981; -fx-text-fill: white;"/>
             </HBox>
 
             <Separator/>

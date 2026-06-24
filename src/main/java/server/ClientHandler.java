@@ -6,7 +6,7 @@ import protocol.MessagePacket;
 import java.io.*;
 import java.net.Socket;
 
-import static protocol.AdminActions.Command.KICK;
+import static protocol.AdminActions.Command.*;
 
 public class ClientHandler implements Runnable {
     private Socket clientSocket;
@@ -57,11 +57,13 @@ public class ClientHandler implements Runnable {
                                     "Authorisation successful! Role: " + role));
 
                             if ("USER".equals(role)) {
+                                System.out.println("[GAME] User " + login + " added to the wait list.");
                                 SimpleServer.matchPlayer(this);
                             } else {
                                 System.out.println("[ADMIN] " + login + " is now monitoring.");
                             }
                         } else {
+                            System.out.println("Failed login attempt: " + login);
                             sendPacket(new MessagePacket(MessagePacket.Type.AUTH_FAIL, "SERVER",
                                     "Invalid username or password!"));
                         }
@@ -168,6 +170,16 @@ public class ClientHandler implements Runnable {
             case GET_MONITORING -> {
                 String stats = SimpleServer.getNetworkMonitoringStatistics();
                 sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", stats));
+            }
+            case UNBAN -> {
+                String userToUnban = packet.getTargetUsername();
+                boolean isUnbanned = DatabaseManager.unbanUserInDB(userToUnban);
+
+                if (isUnbanned) {
+                    sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "User " + userToUnban + " unbanned!"));
+                } else {
+                    sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "User " + userToUnban + " not found!"));
+                }
             }
         }
     }

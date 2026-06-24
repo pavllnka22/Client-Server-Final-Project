@@ -5,7 +5,7 @@ import java.io.Serializable;
 public class AdminActions implements Serializable {
 
     public enum Command {
-        KICK, BAN, GET_MONITORING
+        KICK, BAN, GET_MONITORING, UNBAN
     }
 
     private Command command;
