@@ -33,12 +33,14 @@ public class DatabaseManager {
                 id SERIAL PRIMARY KEY,
                 login VARCHAR(50) UNIQUE NOT NULL,
                 password_hash VARCHAR(256) NOT NULL,
-                role VARCHAR(20) NOT NULL DEFAULT 'USER'
+                role VARCHAR(20) NOT NULL DEFAULT 'USER',
+                is_banned BOOLEAN NOT NULL DEFAULT FALSE
             )
         """;
 
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
+
             stmt.execute(createTableSQL);
             System.out.println("PostgreSQL database initialized successfully.");
             createAdminIfNotExist();
@@ -70,8 +72,8 @@ public class DatabaseManager {
     }
 
      public static String authenticateUser(String login, String password) {
-        String sql = "SELECT password_hash, role FROM users WHERE login = ?";
-        String inputHash = PasswordHasher.hashPassword(password);
+         String sql = "SELECT password_hash, role, is_banned FROM users WHERE login = ?";
+         String inputHash = PasswordHasher.hashPassword(password);
 
         try (Connection conn = getConnection();
              PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
@@ -79,6 +81,11 @@ public class DatabaseManager {
             ResultSet rs = preparedStatement.executeQuery();
 
             if (rs.next()) {
+                boolean isBanned = rs.getBoolean("is_banned");
+                if (isBanned) {
+                    return "BANNED";
+                }
+
                 String dbHash = rs.getString("password_hash");
                 String role = rs.getString("role");
 
@@ -118,6 +125,19 @@ public class DatabaseManager {
             return conn != null && !conn.isClosed();
         } catch (SQLException e) {
             System.err.println("Connection test failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static boolean banUserInDB(String username) {
+        String sql = "UPDATE users SET is_banned = TRUE WHERE login = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+            preparedStatement.setString(1, username);
+            int rows = preparedStatement.executeUpdate();
+            return rows > 0;
+        } catch (SQLException e) {
+            System.err.println("Error while banning: " + e.getMessage());
             return false;
         }
     }

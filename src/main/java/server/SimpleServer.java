@@ -63,4 +63,31 @@ public class SimpleServer {
             System.out.println("GameRoom created successfully!");
         }
     }
+
+    public static ClientHandler getClientHandlerByUsername(String username) {
+
+        for (ClientHandler handler : activeClients) {
+            if (username.equalsIgnoreCase(handler.getUsername())) {
+                return handler;
+            }
+        }
+        return null;
+    }
+
+
+    public static String getNetworkMonitoringStatistics() {
+        int activeConnections = activeClients.size();
+        int threadCount = Thread.activeCount();
+
+        return String.format(
+                "---Active TCP-connections: %d\nNum of threads: %d\nServer status: RUNNING",
+                activeConnections, threadCount
+        );
+    }
+
+    public static synchronized void removeClient(ClientHandler client) {
+        if (activeClients != null) {
+            activeClients.remove(client);
+        }
+    }
 }

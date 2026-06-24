@@ -1,8 +1,11 @@
 package server;
 
+import protocol.AdminActions;
 import protocol.MessagePacket;
 import java.io.*;
 import java.net.Socket;
+
+import static protocol.AdminActions.Command.KICK;
 
 public class ClientHandler implements Runnable {
     private Socket clientSocket;
@@ -10,6 +13,7 @@ public class ClientHandler implements Runnable {
     private ObjectOutputStream out;
     private String username;
     private GameRoom gameRoom;
+    private String role;
 
     public ClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -38,14 +42,21 @@ public class ClientHandler implements Runnable {
 
                     String role = DatabaseManager.authenticateUser(login, password);
 
-                    if (role != null) {
+                    if ("BANNED".equals(role)) {
+                        sendPacket(new MessagePacket(MessagePacket.Type.AUTH_FAIL, "SERVER", "Ваш акаунт забанено адміністратором!"));
+                    } else if (role != null) {
                         this.username = login;
+                        this.role = role;
                         isAuthenticated = true;
 
                         sendPacket(new MessagePacket(MessagePacket.Type.AUTH_SUCCESS, "SERVER", "Authorisation successful! Role: " + role));
 
-
-                        SimpleServer.matchPlayer(this);
+                        if ("USER".equals(this.role)) {
+                            System.out.println("[GAME] User " + login + " added to the wait list.");
+                            SimpleServer.matchPlayer(this);
+                        } else {
+                            System.out.println("[ADMIN] " + login + " is now monitoring.");
+                        }
                     } else {
                         System.out.println("Error while login: " + login);
                         sendPacket(new MessagePacket(MessagePacket.Type.AUTH_FAIL, "SERVER", "Invalid username or password!"));
@@ -65,39 +76,52 @@ public class ClientHandler implements Runnable {
             }
 
             while (true) {
-                MessagePacket packet = (MessagePacket) in.readObject();
-                if (packet == null) break;
+                Object obj = in.readObject();
+                if (obj == null) break;
 
-                System.out.println("Packet received from " + username + ": " + packet.getType());
+                if (obj instanceof MessagePacket packet) {
 
-                if (packet.getType() == MessagePacket.Type.CHAT) {
-                    if (gameRoom != null && gameRoom.containsPlayer(this)) {
-                        ClientHandler opponent = getOpponent();
-                        if (opponent != null) {
-                            opponent.sendPacket(packet);
-                        }
-                    } else {
-                        sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "You are not in a game!"));
-                    }
-                } else if (packet.getType() == MessagePacket.Type.SHOT) {
-                    System.out.println("SHOT from " + username + " at (" + packet.getX() + "," + packet.getY() + ")");
-                    if (gameRoom != null) {
-                        gameRoom.handleShot(this, packet.getX(), packet.getY());
-                    } else {
-                        sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "You are not in a game yet!"));
-                    }
-                } else if (packet.getType() == MessagePacket.Type.SYSTEM) {
-                    String content = packet.getContent();
-                    System.out.println("SYSTEM packet from " + username + ": " + content);
-
-                    if (content != null && content.startsWith("SHIPS:")) {
-                        System.out.println("Processing SHIPS data from " + username);
-                        if (gameRoom != null) {
-                            gameRoom.setPlayerShips(this, content);
+                    if (packet.getType() == MessagePacket.Type.CHAT) {
+                        if (gameRoom != null && gameRoom.containsPlayer(this)) {
+                            ClientHandler opponent = getOpponent();
+                            if (opponent != null) {
+                                opponent.sendPacket(packet);
+                            }
                         } else {
-                            System.out.println("GameRoom is null for " + username);
-                            sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Error: No game room!"));
+                            sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "You are not in a game!"));
                         }
+                    } else if (packet.getType() == MessagePacket.Type.SHOT) {
+                        System.out.println("SHOT from " + username + " at (" + packet.getX() + "," + packet.getY() + ")");
+                        if (gameRoom != null) {
+                            gameRoom.handleShot(this, packet.getX(), packet.getY());
+                        } else {
+                            sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "You are not in a game yet!"));
+                        }
+                    } else if (packet.getType() == MessagePacket.Type.SYSTEM) {
+                        String content = packet.getContent();
+                        System.out.println("SYSTEM packet from " + username + ": " + content);
+
+                        if (content != null && content.startsWith("SHIPS:")) {
+                            System.out.println("Processing SHIPS data from " + username);
+                            if (gameRoom != null) {
+                                gameRoom.setPlayerShips(this, content);
+                            } else {
+                                System.out.println("GameRoom is null for " + username);
+                                sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Error: No game room!"));
+                            }
+                        }
+                    }
+
+
+                } else if (obj instanceof AdminActions adminActions) {
+
+                    AdminActions aa = (AdminActions) obj;
+                    System.out.println("[SERVER] From admin: " + aa.getCommand());
+
+                    if ("ADMIN".equals(this.role)) {
+                        handleAdminAction(aa);
+                    } else {
+                        sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "Not allowed to perform this action!"));
                     }
                 }
             }
@@ -111,6 +135,42 @@ public class ClientHandler implements Runnable {
         }
     }
 
+    private void handleAdminAction(AdminActions packet) {
+        String target = packet.getTargetUsername();
+        ClientHandler targetHandler = SimpleServer.getClientHandlerByUsername(target);
+
+        switch (packet.getCommand()) {
+            case KICK:
+                if (targetHandler != null) {
+                    targetHandler.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "You were kicked!"));
+                    targetHandler.closeConnection();
+                    System.out.println("[ADMIN] User " + target + " was kicked.");
+                }
+                break;
+
+            case BAN:
+
+                DatabaseManager.banUserInDB(target);
+                System.out.println("[АDMIN] User " + target + " was banned.");
+
+                if (targetHandler != null) {
+                    targetHandler.sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", "You were banned" +
+                            "!"));
+
+                    if (targetHandler.getGameRoom() != null) {
+                        targetHandler.getGameRoom().forceWinDueToDisconnection(targetHandler);
+                    }
+
+                    targetHandler.closeConnection();
+                }
+                break;
+
+            case GET_MONITORING:
+                String stats = SimpleServer.getNetworkMonitoringStatistics();
+                sendPacket(new MessagePacket(MessagePacket.Type.SYSTEM, "SERVER", stats));
+                break;
+        }
+    }
     private ClientHandler getOpponent() {
         if (gameRoom == null) return null;
         try {
@@ -128,13 +188,18 @@ public class ClientHandler implements Runnable {
         return null;
     }
 
-    private void closeConnection() {
+    public void closeConnection() {
         try {
+            SimpleServer.removeClient(this);
+
+            if (gameRoom != null) {
+                gameRoom.forceWinDueToDisconnection(this);
+            }
             if (in != null) in.close();
             if (out != null) out.close();
-            if (clientSocket != null) clientSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+            if (clientSocket!= null && !clientSocket.isClosed()) clientSocket.close();
+
+        } catch (IOException _) {
         }
     }
 
@@ -154,5 +219,8 @@ public class ClientHandler implements Runnable {
 
     public String getUsername() {
         return username;
+    }
+    public GameRoom getGameRoom() {
+        return gameRoom;
     }
 }
