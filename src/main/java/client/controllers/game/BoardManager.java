@@ -10,6 +10,11 @@ public class BoardManager {
     private int[][] opponentShipBoard;
     private GridPane playerBoardGrid;
     private GridPane opponentBoardGrid;
+    private BoardClickListener listener;
+
+    public interface BoardClickListener {
+        void onShot(int x, int y);
+    }
 
     public BoardManager(GridPane playerBoardGrid, GridPane opponentBoardGrid) {
         this.playerBoardGrid = playerBoardGrid;
@@ -20,6 +25,10 @@ public class BoardManager {
         this.opponentShipBoard = new int[10][10];
     }
 
+    public void setBoardClickListener(BoardClickListener listener) {
+        this.listener = listener;
+    }
+
     public void createBoards() {
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
@@ -28,6 +37,13 @@ public class BoardManager {
                 playerBoard[i][j] = playerBtn;
 
                 Button opponentBtn = createBoardButton();
+                int finalI = i;
+                int finalJ = j;
+                opponentBtn.setOnAction(e -> {
+                    if (listener != null) {
+                        listener.onShot(finalI, finalJ);
+                    }
+                });
                 opponentBoardGrid.add(opponentBtn, j, i);
                 opponentBoard[i][j] = opponentBtn;
             }
@@ -54,10 +70,49 @@ public class BoardManager {
                     btn.getStyleClass().add("ship-cell");
                     btn.setText("");
                     btn.setDisable(true);
+                } else if (playerShipBoard[i][j] == 2) {
+                    btn.getStyleClass().add("miss-cell");
+                    btn.setText("•");
+                    btn.setDisable(true);
+                } else if (playerShipBoard[i][j] == 3) {
+                    btn.getStyleClass().add("hit-cell");
+                    btn.setText("✕");
+                    btn.setDisable(true);
+                } else if (playerShipBoard[i][j] == 4) {
+                    btn.getStyleClass().add("sunk-cell");
+                    btn.setText("✕");
+                    btn.setDisable(true);
                 } else {
                     btn.getStyleClass().add("empty-cell");
                     btn.setText("");
                     btn.setDisable(true);
+                }
+            }
+        }
+    }
+
+    public void updateOpponentBoardDisplay() {
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10; j++) {
+                Button btn = opponentBoard[i][j];
+                btn.getStyleClass().removeAll("empty-cell", "hit-cell", "miss-cell", "sunk-cell");
+
+                if (opponentShipBoard[i][j] == 2) {
+                    btn.getStyleClass().add("miss-cell");
+                    btn.setText("•");
+                    btn.setDisable(true);
+                } else if (opponentShipBoard[i][j] == 3) {
+                    btn.getStyleClass().add("hit-cell");
+                    btn.setText("✕");
+                    btn.setDisable(true);
+                } else if (opponentShipBoard[i][j] == 4) {
+                    btn.getStyleClass().add("sunk-cell");
+                    btn.setText("✕");
+                    btn.setDisable(true);
+                } else {
+                    btn.getStyleClass().add("empty-cell");
+                    btn.setText("");
+                    btn.setDisable(false);
                 }
             }
         }
@@ -83,12 +138,46 @@ public class BoardManager {
         return playerShipBoard;
     }
 
+    public int[][] getOpponentShipBoard() {
+        return opponentShipBoard;
+    }
+
     public Button[][] getPlayerBoard() {
         return playerBoard;
     }
 
     public Button[][] getOpponentBoard() {
         return opponentBoard;
+    }
+
+    public void setOpponentHit(int x, int y) {
+        opponentShipBoard[x][y] = 3;
+        updateOpponentBoardDisplay();
+    }
+
+    public void setOpponentMiss(int x, int y) {
+        opponentShipBoard[x][y] = 2;
+        updateOpponentBoardDisplay();
+    }
+
+    public void setOpponentSunk(int x, int y) {
+        opponentShipBoard[x][y] = 4;
+        updateOpponentBoardDisplay();
+    }
+
+    public void setPlayerHit(int x, int y) {
+        playerShipBoard[x][y] = 3;
+        updateBoardDisplay();
+    }
+
+    public void setPlayerMiss(int x, int y) {
+        playerShipBoard[x][y] = 2;
+        updateBoardDisplay();
+    }
+
+    public void setPlayerSunk(int x, int y) {
+        playerShipBoard[x][y] = 4;
+        updateBoardDisplay();
     }
 
     public int countShips() {
@@ -149,7 +238,22 @@ public class BoardManager {
                 btn.getStyleClass().removeAll("hit-cell", "miss-cell", "sunk-cell");
                 btn.getStyleClass().add("empty-cell");
                 btn.setText("");
+                btn.setDisable(false);
             }
         }
+    }
+
+    public void loadShipsFromData(String data) {
+        if (data == null || data.isEmpty()) return;
+        String[] parts = data.split(";");
+        for (String part : parts) {
+            String[] coords = part.split(",");
+            if (coords.length == 2) {
+                int x = Integer.parseInt(coords[0]);
+                int y = Integer.parseInt(coords[1]);
+                playerShipBoard[x][y] = 1;
+            }
+        }
+        updateBoardDisplay();
     }
 }

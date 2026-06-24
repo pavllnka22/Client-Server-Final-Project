@@ -6,7 +6,9 @@ public class MessagePacket implements Serializable {
 
     public enum Type {
         CONNECT, CHAT, SHOT, SYSTEM,
-        AUTH_REQUEST, AUTH_SUCCESS, AUTH_FAIL
+        AUTH_REQUEST, AUTH_SUCCESS, AUTH_FAIL,
+        REGISTER_REQUEST, REGISTER_SUCCESS, REGISTER_FAIL,
+        GAME_UPDATE, GAME_OVER
     }
 
     private Type type;
@@ -15,7 +17,6 @@ public class MessagePacket implements Serializable {
     private String password;
     private int x;
     private int y;
-
 
     public MessagePacket(Type type, String sender, String content) {
         this.type = type;
@@ -33,10 +34,10 @@ public class MessagePacket implements Serializable {
     public MessagePacket(Type type, String sender, int x, int y) {
         this.type = type;
         this.sender = sender;
+        this.content = content;
         this.x = x;
         this.y = y;
     }
-
 
     public Type getType() { return type; }
     public String getSender() { return sender; }

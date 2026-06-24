@@ -370,3 +370,27 @@
     -fx-text-fill: #5a7a8a;
     -fx-alignment: CENTER;
 }
+
+
+.hit-cell {
+    -fx-background-color: #ef4444;
+    -fx-border-color: #a8c5d6;
+    -fx-text-fill: white;
+    -fx-font-size: 16;
+    -fx-font-weight: bold;
+}
+
+.miss-cell {
+    -fx-background-color: #e5e7eb;
+    -fx-border-color: #a8c5d6;
+    -fx-text-fill: #6b7280;
+    -fx-font-size: 14;
+}
+
+.sunk-cell {
+    -fx-background-color: #dc2626;
+    -fx-border-color: #a8c5d6;
+    -fx-text-fill: white;
+    -fx-font-size: 16;
+    -fx-font-weight: bold;
+}

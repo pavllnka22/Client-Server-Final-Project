@@ -1,4 +1,4 @@
-package client.controllers;
+package client.controllers.auth;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -81,7 +81,6 @@ public class LoginController {
         loginExecutor.submit(() -> {
             try {
                 socket = new Socket("localhost", 8080);
-                socket.setSoTimeout(10000);
                 out = new ObjectOutputStream(socket.getOutputStream());
                 in = new ObjectInputStream(socket.getInputStream());
 
@@ -124,7 +123,31 @@ public class LoginController {
 
     @FXML
     public void handleRegister() {
-        showStatus("Registration is not implemented yet!", false);
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/register.fxml"));
+            Scene scene = new Scene(loader.load(), 500, 750);
+            scene.getStylesheets().add(getClass().getResource("/css/styles.css").toExternalForm());
+
+            RegisterController registerController = loader.getController();
+
+            Stage stage = new Stage();
+            stage.setTitle("BattleShip - Register");
+            stage.setScene(scene);
+            stage.initModality(javafx.stage.Modality.WINDOW_MODAL);
+            stage.initOwner(loginButton.getScene().getWindow());
+
+            registerController.initData(loginExecutor, socket, out, in, stage);
+
+            stage.setOnCloseRequest((WindowEvent event) -> {
+                stage.close();
+            });
+
+            stage.show();
+
+        } catch (IOException e) {
+            showStatus("Error opening registration: " + e.getMessage(), true);
+            e.printStackTrace();
+        }
     }
 
     private String getPassword() {
