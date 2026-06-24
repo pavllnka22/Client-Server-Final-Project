@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="client.controllers.auth.AdminController" prefWidth="600.0" prefHeight="400.0">
+    <padding>
+        <Insets top="15" right="15" bottom="15" left="15"/>
+    </padding>
+
+    <top>
+        <Label text="Панель Адміністратора Сервера" style="-fx-font-size: 18; -fx-font-weight: bold;" BorderPane.alignment="CENTER"/>
+    </top>
+
+    <center>
+        <VBox spacing="10">
+            <BorderPane.margin>
+                <Insets top="10" bottom="10"/>
+            </BorderPane.margin>
+            <Label text="Server and Network Monitoring:" style="-fx-font-weight: bold;"/>
+            <TextArea fx:id="monitoringTextArea" editable="false" style="-fx-font-family: 'Courier New';" VBox.vgrow="ALWAYS"/>
+            <Button text="Refresh network data" onAction="#handleRefreshMonitoring" maxWidth="Infinity"/>
+        </VBox>
+    </center>
+
+    <right>
+        <VBox spacing="15" prefWidth="220.0">
+            <padding>
+                <Insets left="15"/>
+            </padding>
+            <Label text="Users control:" style="-fx-font-weight: bold;"/>
+
+            <VBox spacing="5">
+                <Label text="Target username:"/>
+                <TextField fx:id="targetUserField" promptText="Enter player's username"/>
+            </VBox>
+
+            <HBox spacing="10">
+                <Button text="Kick" onAction="#handleKick" HBox.hgrow="ALWAYS" maxWidth="Infinity" style="-fx-background-color: #f59e0b; -fx-text-fill: white;"/>
+                <Button text="Ban" onAction="#handleBan" HBox.hgrow="ALWAYS" maxWidth="Infinity" style="-fx-background-color: #ef4444; -fx-text-fill: white;"/>
+            </HBox>
+
+            <Separator/>
+
+            <Label fx:id="adminStatusLabel" wrapText="true" style="-fx-text-fill: #6b7280;"/>
+        </VBox>
+    </right>
+</BorderPane>
